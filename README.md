@@ -1,80 +1,79 @@
 # IRS Helper
 
-IRS Helper is a web-based tool designed to simplify the process of filling out tax declarations by automating the enrichment of XML declaration files with financial data extracted from broker PDF reports.
+IRS Helper automates one of the most error-prone parts of filing Portuguese IRS: moving broker report data into the official XML declaration format.
 
-## 🚀 Features
+## Business Goal
 
-- **Automated PDF Extraction**: Extracts gains and dividends data from PDF reports provided by brokers such as **XTB** and **Trade Republic**.
-- **XML Enrichment**: Intelligently inserts extracted financial data into the corresponding sections of an XML tax declaration.
-- **Visual Verification**:
-  - **Enrichment Report**: A summary of the data extracted and added to the declaration.
-  - **Diff Viewer**: A side-by-side comparison of the original and enriched XML files to ensure accuracy.
-- **Internationalization**: Full support for **English** and **Portuguese** languages.
-- **Client-Side Processing**: All file processing happens locally in the browser for maximum privacy and security.
+Taxpayers who invest through platforms such as XTB and Trade Republic often need to manually transcribe values into IRS annex tables. That manual work is slow, repetitive, and easy to get wrong.
 
-## 🛠️ Tech Stack
+IRS Helper reduces that effort by extracting data from broker PDFs and enriching the IRS XML file with the right table rows, while still allowing manual verification before submission.
 
-- **Framework**: [React 19](https://react.dev/) with [TypeScript](https://www.typescriptlang.org/)
-- **Build Tool**: [Vite](https://vitejs.dev/)
-- **PDF Parsing**: [`pdfjs-dist`](https://mozilla.github.io/pdf.js/)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **i18n**: [i18next](https://www.i18next.com/)
-- **Testing**: 
-  - [Playwright](https://playwright.dev/) for End-to-End (E2E) testing.
-  - [Vitest](https://vitest.dev/) and [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) for unit and integration tests.
+## What The Application Does
 
-## 🏁 Getting Started
+1. Reads broker PDF reports and extracts supported transaction rows.
+2. Inserts those rows into the proper IRS XML annex sections.
+3. Generates a visual report of what was added.
+4. Shows a before/after XML diff so users can audit changes.
+5. Lets users download the enriched XML for import into their tax workflow.
+
+## Supported Scope
+
+- Broker reports: XTB and Trade Republic
+- IRS annexes and tables: Anexo J and Anexo G (supported subsets)
+- Languages: English and Portuguese
+
+## Privacy And Security
+
+All processing is performed in the browser.
+
+- No user files are uploaded to external servers.
+- No backend is required for enrichment.
+- XML and PDF files remain on the user machine during processing.
+
+## Typical Workflow
+
+1. Upload the base IRS XML declaration file.
+2. Upload one or more broker PDF reports.
+3. Run enrichment.
+4. Review the enrichment summary and XML diff.
+5. Download the generated XML.
+
+## Why This Is Valuable
+
+- Reduces manual tax preparation time.
+- Lowers transcription mistakes in tax table entries.
+- Improves confidence with transparent before/after comparison.
+- Supports a privacy-first filing process.
+
+## Product Notes
+
+IRS Helper is a support tool, not tax advice software.
+
+- Users remain responsible for validating all generated values.
+- Users should confirm legal and fiscal applicability to their own case.
+
+## Local Development
 
 ### Prerequisites
 
-- Node.js (Latest LTS recommended)
+- Node.js LTS
 - npm
 
-### Installation
+### Run
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd irs-helper
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-### Development
-
-Run the development server:
 ```bash
+npm install
 npm run dev
 ```
-The application will be available at `http://localhost:5173`.
 
-### Building for Production
+### Quality Checks
 
-Create an optimized production build:
 ```bash
+npm run lint
+npm run test
 npm run build
 ```
 
-### Linting
+## License
 
-Check for code style and type errors:
-```bash
-npm run lint
-```
-
-## 🧪 Testing
-
-### Unit Tests
-Run tests for PDF parsing and XML modification utilities:
-```bash
-npx vitest
-```
-
-### E2E Tests
-Run end-to-end tests using Playwright:
-```bash
-npx playwright test
-```
+License not yet defined.

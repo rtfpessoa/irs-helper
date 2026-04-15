@@ -14,7 +14,7 @@
       "download": "Descarregar Ficheiro Gerado",
       "start_over": "Começar de novo",
       "title": "Resultados do Enriquecimento",
-      "subtitle": "Foram adicionadas <strong>{{count}}</strong> linhas no total em {{activeTables}} tabela(s)."
+      "subtitle": "Foram adicionadas {{count}} linhas no total em {{activeTables}} tabela(s)."
     },
     "error": {
       "no_rows": "Não foram encontradas linhas relevantes no(s) PDF(s) fornecido(s).",
@@ -29,7 +29,9 @@
       "xtb_no_gains_rows": "Não foram encontrados dados de mais-valias em \"{{fileName}}\". Verifique que este é um relatório de Mais-valias XTB.",
       "xtb_no_dividends_rows": "Não foram encontrados dados de dividendos em \"{{fileName}}\". Verifique que este é um relatório de Dividendos XTB.",
       "tr_wrong_file": "\"{{fileName}}\" não parece ser um Relatório de Impostos da Trade Republic. Por favor, carregue o ficheiro correto.",
-      "tr_no_rows": "Não foram encontrados dados de dividendos/juros em \"{{fileName}}\". Verifique que este é um Relatório de Impostos da Trade Republic."
+      "tr_no_rows": "Não foram encontrados dados de dividendos/juros em \"{{fileName}}\". Verifique que este é um Relatório de Impostos da Trade Republic.",
+      "file_too_large": "\"{{fileName}}\" é demasiado grande para ser processado com segurança. Forneça um PDF menor.",
+      "too_many_pages": "\"{{fileName}}\" tem demasiadas páginas para ser processado com segurança."
     }
   },
   "uploader": {
@@ -78,6 +80,14 @@
     "quadro_92b": {
       "title": "Quadro 9.2B",
       "subtitle": "Outros rendimentos de capitais"
+    },
+    "totals": {
+      "gross_income": "Rendimento Bruto (RendimentoBruto)",
+      "tax_paid_abroad": "Imposto Pago no Estrangeiro",
+      "realisation_value": "Valor de Realização",
+      "acquisition_value": "Valor de Aquisição",
+      "expenses_charges": "Despesas e Encargos",
+      "net_income": "Rendimento Líquido (RendimentoLiquido)"
     }
   },
   "diff": {

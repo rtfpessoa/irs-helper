@@ -3,10 +3,15 @@ import remarkGfm from 'remark-gfm';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import markdownContent from '../../how_it_works.md?raw';
+import markdownContentEn from '../../how_it_works.md?raw';
+import markdownContentPt from '../../how_it_works_pt.md?raw';
 
+/** Renders the localized markdown guide that explains the enrichment workflow. */
 export const HowItWorksPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const markdownContent = i18n.language?.startsWith('en')
+    ? markdownContentEn
+    : markdownContentPt;
 
   return (
     <div className="how-it-works">

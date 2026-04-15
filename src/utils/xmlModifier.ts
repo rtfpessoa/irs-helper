@@ -3,6 +3,7 @@ import type { TaxRow, TaxRow92B, TaxRow8A, TaxRowG13, ParsedPdfData, EnrichmentR
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+/** Parses the highest NLinha value in a target block to continue incremental numbering. */
 function parseHighestNLinha(xml: string, blockName: string): number {
   let highest = 950;
   if (blockName === 'AnexoJq092BT01') highest = 990;
@@ -16,6 +17,7 @@ function parseHighestNLinha(xml: string, blockName: string): number {
   return highest;
 }
 
+/** Parses the highest Linha@numero already present in a target block. */
 function parseHighestNumero(xml: string, blockName: string): number {
   let highest = 0;
   const re = new RegExp(`<${blockName}-Linha\\s[^>]*numero="(\\d+)"`, 'g');
@@ -27,6 +29,7 @@ function parseHighestNumero(xml: string, blockName: string): number {
   return highest;
 }
 
+/** Aggregates numeric XML tag values for pre-existing rows in a block. */
 function sumField(tag: string, text: string): number {
   let total = 0;
   const re = new RegExp(`<${tag}>(-?[\\d.]+)<\\/${tag}>`, 'g');
@@ -35,6 +38,7 @@ function sumField(tag: string, text: string): number {
   return total;
 }
 
+/** Updates or inserts a Soma node while preserving indentation from surrounding XML. */
 function upsertSomaNode(xml: string, tag: string, value: number, searchStartIdx: number, quadroName: string): string {
   const formatted = value.toFixed(2);
   const openTag = `<${tag}>`;
@@ -51,6 +55,30 @@ function upsertSomaNode(xml: string, tag: string, value: number, searchStartIdx:
   const lineIndent = lineStart !== -1 ? xml.slice(lineStart + 1, qIdx).match(/^(\s*)/)?.[1] ?? '      ' : '      ';
   const newNode = `\n${lineIndent}${openTag}${formatted}${closeTag}`;
   return xml.slice(0, qIdx) + newNode + '\n' + xml.slice(qIdx);
+}
+
+function parseMoney(value: string): number {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function sumBy<T>(rows: T[], getter: (row: T) => string): number {
+  return rows.reduce((total, row) => total + parseMoney(getter(row)), 0);
+}
+
+function validateXmlShape(xml: string, data: ParsedPdfData): void {
+  if (!xml.includes('<Modelo3')) {
+    throw new Error('Invalid XML: expected a Modelo3 root node.');
+  }
+
+  const needsAnexoJ = data.rows8A.length > 0 || data.rows92A.length > 0 || data.rows92B.length > 0;
+  if (needsAnexoJ && !xml.includes('<AnexoJ')) {
+    throw new Error('Invalid XML: Anexo J is required for the selected broker reports.');
+  }
+
+  if (data.rowsG13.length > 0 && !xml.includes('<AnexoG')) {
+    throw new Error('Invalid XML: Anexo G is required for CFD data.');
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -146,12 +174,13 @@ export function enrichXmlWithGains(
   sources: { table8A: string[], table92A: string[], table92B: string[], tableG13: string[] } = { table8A: [], table92A: [], table92B: [], tableG13: [] }
 ): EnrichmentResult {
   const { rows8A, rows92A, rows92B, rowsG13 } = data;
+  validateXmlShape(originalXml, data);
   
   const emptySummary: EnrichmentSummary = {
-    table8A: { rowsAdded: 0, totals: [] },
-    table92A: { rowsAdded: 0, totals: [] },
-    table92B: { rowsAdded: 0, totals: [] },
-    tableG13: { rowsAdded: 0, totals: [] },
+    table8A: { rowsAdded: 0, totals: [], sources: [] },
+    table92A: { rowsAdded: 0, totals: [], sources: [] },
+    table92B: { rowsAdded: 0, totals: [], sources: [] },
+    tableG13: { rowsAdded: 0, totals: [], sources: [] },
     totalRowsAdded: 0,
   };
 
@@ -185,70 +214,80 @@ export function enrichXmlWithGains(
     expandSelfClosing('Quadro08', anexoJOpenIdx, anexoJCloseIdx);
     expandSelfClosing('Quadro09', anexoJOpenIdx, anexoJCloseIdx);
 
-    // Inject 8 A
-    xml = processBlock<TaxRow8A>(xml, {
-      containerName: 'AnexoJq08AT01',
-      quadroName: 'Quadro08',
-      rows: rows8A,
-      buildFields: (row, nLinha) => [
-        ['NLinha', String(nLinha)],
-        ['CodRendimento', row.codigo],
-        ['CodPais', row.codPais],
-        ['RendimentoBruto', row.rendimentoBruto],
-        ['ImpostoPagoEstrangeiroPaisFonte', row.impostoPago]
-      ],
-      somaNodes: [
-        { tag: 'AnexoJq08AT01SomaC01', fieldToSum: 'RendimentoBruto', computeNewSoma: rows => rows.reduce((acc, r) => acc + parseFloat(r.rendimentoBruto), 0) },
-        { tag: 'AnexoJq08AT01SomaC02', fieldToSum: 'ImpostoPagoEstrangeiroPaisFonte', computeNewSoma: rows => rows.reduce((acc, r) => acc + parseFloat(r.impostoPago), 0) },
-      ]
-    }, anexoJOpenIdx);
+    const anexoJBlocks: InjectConfig<TaxRow8A | TaxRow | TaxRow92B>[] = [
+      {
+        containerName: 'AnexoJq08AT01',
+        quadroName: 'Quadro08',
+        rows: rows8A,
+        buildFields: (row, nLinha) => {
+          const typedRow = row as TaxRow8A;
+          return [
+            ['NLinha', String(nLinha)],
+            ['CodRendimento', typedRow.codigo],
+            ['CodPais', typedRow.codPais],
+            ['RendimentoBruto', typedRow.rendimentoBruto],
+            ['ImpostoPagoEstrangeiroPaisFonte', typedRow.impostoPago],
+          ];
+        },
+        somaNodes: [
+          { tag: 'AnexoJq08AT01SomaC01', fieldToSum: 'RendimentoBruto', computeNewSoma: rows => sumBy(rows as TaxRow8A[], r => r.rendimentoBruto) },
+          { tag: 'AnexoJq08AT01SomaC02', fieldToSum: 'ImpostoPagoEstrangeiroPaisFonte', computeNewSoma: rows => sumBy(rows as TaxRow8A[], r => r.impostoPago) },
+        ],
+      },
+      {
+        containerName: 'AnexoJq092AT01',
+        quadroName: 'Quadro09',
+        rows: rows92A,
+        buildFields: (row, nLinha) => {
+          const typedRow = row as TaxRow;
+          return [
+            ['NLinha', String(nLinha)],
+            ['CodPais', typedRow.codPais],
+            ['Codigo', typedRow.codigo],
+            ['AnoRealizacao', typedRow.anoRealizacao],
+            ['MesRealizacao', typedRow.mesRealizacao],
+            ['DiaRealizacao', typedRow.diaRealizacao],
+            ['ValorRealizacao', typedRow.valorRealizacao],
+            ['AnoAquisicao', typedRow.anoAquisicao],
+            ['MesAquisicao', typedRow.mesAquisicao],
+            ['DiaAquisicao', typedRow.diaAquisicao],
+            ['ValorAquisicao', typedRow.valorAquisicao],
+            ['DespesasEncargos', typedRow.despesasEncargos],
+            ['ImpostoPagoNoEstrangeiro', typedRow.impostoPagoNoEstrangeiro],
+            ['CodPaisContraparte', typedRow.codPaisContraparte],
+          ];
+        },
+        somaNodes: [
+          { tag: 'AnexoJq092AT01SomaC01', fieldToSum: 'ValorRealizacao', computeNewSoma: rows => sumBy(rows as TaxRow[], r => r.valorRealizacao) },
+          { tag: 'AnexoJq092AT01SomaC02', fieldToSum: 'ValorAquisicao', computeNewSoma: rows => sumBy(rows as TaxRow[], r => r.valorAquisicao) },
+          { tag: 'AnexoJq092AT01SomaC03', fieldToSum: 'DespesasEncargos', computeNewSoma: rows => sumBy(rows as TaxRow[], r => r.despesasEncargos) },
+          { tag: 'AnexoJq092AT01SomaC04', fieldToSum: 'ImpostoPagoNoEstrangeiro', computeNewSoma: rows => sumBy(rows as TaxRow[], r => r.impostoPagoNoEstrangeiro) },
+        ],
+      },
+      {
+        containerName: 'AnexoJq092BT01',
+        quadroName: 'Quadro09',
+        rows: rows92B,
+        buildFields: (row, nLinha) => {
+          const typedRow = row as TaxRow92B;
+          return [
+            ['NLinha', String(nLinha)],
+            ['CodRendimento', typedRow.codigo],
+            ['CodPais', typedRow.codPais],
+            ['RendimentoLiquido', typedRow.rendimentoLiquido],
+            ['ImpostoPagoEstrangeiro', typedRow.impostoPagoNoEstrangeiro],
+          ];
+        },
+        somaNodes: [
+          { tag: 'AnexoJq092BT01SomaC01', fieldToSum: 'RendimentoLiquido', computeNewSoma: rows => sumBy(rows as TaxRow92B[], r => r.rendimentoLiquido) },
+          { tag: 'AnexoJq092BT01SomaC02', fieldToSum: 'ImpostoPagoEstrangeiro', computeNewSoma: rows => sumBy(rows as TaxRow92B[], r => r.impostoPagoNoEstrangeiro) },
+        ],
+      },
+    ];
 
-    // Inject 9.2 A
-    xml = processBlock<TaxRow>(xml, {
-      containerName: 'AnexoJq092AT01',
-      quadroName: 'Quadro09',
-      rows: rows92A,
-      buildFields: (row, nLinha) => [
-        ['NLinha', String(nLinha)],
-        ['CodPais', row.codPais],
-        ['Codigo', row.codigo],
-        ['AnoRealizacao', row.anoRealizacao],
-        ['MesRealizacao', row.mesRealizacao],
-        ['DiaRealizacao', row.diaRealizacao],
-        ['ValorRealizacao', row.valorRealizacao],
-        ['AnoAquisicao', row.anoAquisicao],
-        ['MesAquisicao', row.mesAquisicao],
-        ['DiaAquisicao', row.diaAquisicao],
-        ['ValorAquisicao', row.valorAquisicao],
-        ['DespesasEncargos', row.despesasEncargos],
-        ['ImpostoPagoNoEstrangeiro', row.impostoPagoNoEstrangeiro],
-        ['CodPaisContraparte', row.codPaisContraparte],
-      ],
-      somaNodes: [
-        { tag: 'AnexoJq092AT01SomaC01', fieldToSum: 'ValorRealizacao', computeNewSoma: rows => rows.reduce((acc, r) => acc + parseFloat(r.valorRealizacao), 0) },
-        { tag: 'AnexoJq092AT01SomaC02', fieldToSum: 'ValorAquisicao', computeNewSoma: rows => rows.reduce((acc, r) => acc + parseFloat(r.valorAquisicao), 0) },
-        { tag: 'AnexoJq092AT01SomaC03', fieldToSum: 'DespesasEncargos', computeNewSoma: rows => rows.reduce((acc, r) => acc + parseFloat(r.despesasEncargos), 0) },
-        { tag: 'AnexoJq092AT01SomaC04', fieldToSum: 'ImpostoPagoNoEstrangeiro', computeNewSoma: rows => rows.reduce((acc, r) => acc + parseFloat(r.impostoPagoNoEstrangeiro), 0) },
-      ]
-    }, anexoJOpenIdx);
-
-    // Inject 9.2 B
-    xml = processBlock<TaxRow92B>(xml, {
-      containerName: 'AnexoJq092BT01',
-      quadroName: 'Quadro09',
-      rows: rows92B,
-      buildFields: (row, nLinha) => [
-        ['NLinha', String(nLinha)],
-        ['CodRendimento', row.codigo],
-        ['CodPais', row.codPais],
-        ['RendimentoLiquido', row.rendimentoLiquido],
-        ['ImpostoPagoEstrangeiro', row.impostoPagoNoEstrangeiro]
-      ],
-      somaNodes: [
-        { tag: 'AnexoJq092BT01SomaC01', fieldToSum: 'RendimentoLiquido', computeNewSoma: rows => rows.reduce((acc, r) => acc + parseFloat(r.rendimentoLiquido), 0) },
-        { tag: 'AnexoJq092BT01SomaC02', fieldToSum: 'ImpostoPagoEstrangeiro', computeNewSoma: rows => rows.reduce((acc, r) => acc + parseFloat(r.impostoPagoNoEstrangeiro), 0) },
-      ]
-    }, anexoJOpenIdx);
+    for (const config of anexoJBlocks) {
+      xml = processBlock(xml, config, anexoJOpenIdx);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -263,12 +302,15 @@ export function enrichXmlWithGains(
       containerName: 'AnexoGq13T01',
       quadroName: 'Quadro13',
       rows: rowsG13,
-      buildFields: (row, _nLinha) => [
+      buildFields: (row, nLinha) => {
+        void nLinha;
+        return [
         ['CodigoOperacao', row.codigoOperacao],
         ['Titular', row.titular],
         ['RendimentoLiquido', row.rendimentoLiquido],
         ['PaisContraparte', row.paisContraparte],
-      ],
+        ];
+      },
       somaNodes: [
         { tag: 'AnexoGq13T01SomaC01', fieldToSum: 'RendimentoLiquido', computeNewSoma: rows => rows.reduce((acc, r) => acc + parseFloat(r.rendimentoLiquido), 0) },
       ]
@@ -283,33 +325,33 @@ export function enrichXmlWithGains(
       rowsAdded: rows8A.length,
       sources: sources.table8A,
       totals: rows8A.length === 0 ? [] : [
-        { label: 'Gross Income (RendimentoBruto)', value: fmt(rows8A.reduce((a, r) => a + parseFloat(r.rendimentoBruto), 0)), currency: true },
-        { label: 'Tax Paid Abroad (ImpostoPago)', value: fmt(rows8A.reduce((a, r) => a + parseFloat(r.impostoPago), 0)), currency: true },
+        { label: 'report.totals.gross_income', value: fmt(sumBy(rows8A, r => r.rendimentoBruto)), currency: true },
+        { label: 'report.totals.tax_paid_abroad', value: fmt(sumBy(rows8A, r => r.impostoPago)), currency: true },
       ],
     },
     table92A: {
       rowsAdded: rows92A.length,
       sources: sources.table92A,
       totals: rows92A.length === 0 ? [] : [
-        { label: 'Realisation Value', value: fmt(rows92A.reduce((a, r) => a + parseFloat(r.valorRealizacao), 0)), currency: true },
-        { label: 'Acquisition Value', value: fmt(rows92A.reduce((a, r) => a + parseFloat(r.valorAquisicao), 0)), currency: true },
-        { label: 'Expenses & Charges', value: fmt(rows92A.reduce((a, r) => a + parseFloat(r.despesasEncargos), 0)), currency: true },
-        { label: 'Tax Paid Abroad', value: fmt(rows92A.reduce((a, r) => a + parseFloat(r.impostoPagoNoEstrangeiro), 0)), currency: true },
+        { label: 'report.totals.realisation_value', value: fmt(sumBy(rows92A, r => r.valorRealizacao)), currency: true },
+        { label: 'report.totals.acquisition_value', value: fmt(sumBy(rows92A, r => r.valorAquisicao)), currency: true },
+        { label: 'report.totals.expenses_charges', value: fmt(sumBy(rows92A, r => r.despesasEncargos)), currency: true },
+        { label: 'report.totals.tax_paid_abroad', value: fmt(sumBy(rows92A, r => r.impostoPagoNoEstrangeiro)), currency: true },
       ],
     },
     table92B: {
       rowsAdded: rows92B.length,
       sources: sources.table92B,
       totals: rows92B.length === 0 ? [] : [
-        { label: 'Net Income (RendimentoLiquido)', value: fmt(rows92B.reduce((a, r) => a + parseFloat(r.rendimentoLiquido), 0)), currency: true },
-        { label: 'Tax Paid Abroad', value: fmt(rows92B.reduce((a, r) => a + parseFloat(r.impostoPagoNoEstrangeiro), 0)), currency: true },
+        { label: 'report.totals.net_income', value: fmt(sumBy(rows92B, r => r.rendimentoLiquido)), currency: true },
+        { label: 'report.totals.tax_paid_abroad', value: fmt(sumBy(rows92B, r => r.impostoPagoNoEstrangeiro)), currency: true },
       ],
     },
     tableG13: {
       rowsAdded: rowsG13.length,
       sources: sources.tableG13,
       totals: rowsG13.length === 0 ? [] : [
-        { label: 'Net Income (RendimentoLiquido)', value: fmt(rowsG13.reduce((a, r) => a + parseFloat(r.rendimentoLiquido), 0)), currency: true },
+        { label: 'report.totals.net_income', value: fmt(sumBy(rowsG13, r => r.rendimentoLiquido)), currency: true },
       ],
     },
     totalRowsAdded: rows8A.length + rows92A.length + rows92B.length + rowsG13.length,

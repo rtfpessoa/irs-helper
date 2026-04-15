@@ -2,8 +2,6 @@
 
 This section explains the process of tax declaration enrichment in three simple steps:
 
-adasdasda
-
 ## Step 1: Upload XML File
 You start by uploading your official tax declaration XML file. This provides the structure and required fields for the tax authority.
 

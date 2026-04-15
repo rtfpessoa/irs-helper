@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Test artifacts
+playwright-report/
+test-results/
+coverage/
+
+# Local sensitive files used for manual testing
+*.pdf
+*.xml
+
+# Local AI/editor helper metadata
+.agents/

@@ -14,7 +14,7 @@
       "download": "Download Generated File",
       "start_over": "Start Over",
       "title": "Enrichment Results",
-      "subtitle": "<strong>{{count}}</strong> total rows were added across {{activeTables}} table(s)."
+      "subtitle": "{{count}} total rows were added across {{activeTables}} table(s)."
     },
     "error": {
       "no_rows": "No relevant rows found in the provided PDF(s).",
@@ -29,7 +29,9 @@
       "xtb_no_gains_rows": "No capital gains data found in \"{{fileName}}\". Please verify this is an XTB Capital Gains report.",
       "xtb_no_dividends_rows": "No dividend data found in \"{{fileName}}\". Please verify this is an XTB Dividends report.",
       "tr_wrong_file": "\"{{fileName}}\" does not appear to be a Trade Republic Tax Report. Please upload the correct file.",
-      "tr_no_rows": "No dividend/interest data found in \"{{fileName}}\". Please verify this is a Trade Republic Tax Report."
+      "tr_no_rows": "No dividend/interest data found in \"{{fileName}}\". Please verify this is a Trade Republic Tax Report.",
+      "file_too_large": "\"{{fileName}}\" is too large to process safely. Please provide a smaller PDF.",
+      "too_many_pages": "\"{{fileName}}\" has too many pages to process safely."
     }
   },
   "uploader": {
@@ -78,6 +80,14 @@
     "quadro_92b": {
       "title": "Quadro 9.2B",
       "subtitle": "Other Investment Income"
+    },
+    "totals": {
+      "gross_income": "Gross Income (RendimentoBruto)",
+      "tax_paid_abroad": "Tax Paid Abroad",
+      "realisation_value": "Realisation Value",
+      "acquisition_value": "Acquisition Value",
+      "expenses_charges": "Expenses & Charges",
+      "net_income": "Net Income (RendimentoLiquido)"
     }
   },
   "diff": {

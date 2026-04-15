@@ -1,5 +1,13 @@
-export interface TaxRow {
+/** Broker labels used in enrichment summaries. */
+export type BrokerName = 'XTB' | 'Trade Republic';
+
+/** Common fields shared by IRS table rows that include country information. */
+export interface BaseTaxRow {
   codPais: string;
+}
+
+/** Anexo J - Quadro 9.2 A row (capital gains sells/acquisitions). */
+export interface TaxRow extends BaseTaxRow {
   codigo: string;
   anoRealizacao: string;
   mesRealizacao: string;
@@ -14,21 +22,22 @@ export interface TaxRow {
   codPaisContraparte: string;
 }
 
-export interface TaxRow92B {
+/** Anexo J - Quadro 9.2 B row (other investment income). */
+export interface TaxRow92B extends BaseTaxRow {
   codigo: string;
-  codPais: string;
   rendimentoLiquido: string;
   impostoPagoNoEstrangeiro: string;
   codPaisContraparte: string;
 }
 
-export interface TaxRow8A {
+/** Anexo J - Quadro 8 A row (dividends and interest). */
+export interface TaxRow8A extends BaseTaxRow {
   codigo: string;
-  codPais: string;
   rendimentoBruto: string;
   impostoPago: string;
 }
 
+/** Anexo G - Quadro 13 row (CFDs/derivatives). */
 export interface TaxRowG13 {
   codigoOperacao: string;
   titular: string;
@@ -36,6 +45,7 @@ export interface TaxRowG13 {
   paisContraparte: string;
 }
 
+/** Parsed broker data normalized to IRS table rows. */
 export interface ParsedPdfData {
   rows8A: TaxRow8A[];
   rows92A: TaxRow[];

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
-  extractTableRowsFromPdf,
   parseXtbCapitalGainsPdf,
   parseXtbDividendsPdf,
   parseTradeRepublicPdf,
@@ -17,75 +16,17 @@ vi.mock('pdfjs-dist', () => {
 
 // Helper to mock a PDF with given text items
 function mockPdfDocument(items: { str: string }[]) {
-  // @ts-ignore
-  pdfjsLib.getDocument.mockReturnValue({
+  const getDocumentMock = vi.mocked(pdfjsLib.getDocument);
+
+  getDocumentMock.mockReturnValue({
     promise: Promise.resolve({
       numPages: 1,
       getPage: vi.fn().mockResolvedValue({
         getTextContent: vi.fn().mockResolvedValue({ items })
-      }) // @ts-ignore
-    }) as any
-  });
+      })
+    })
+  } as unknown as ReturnType<typeof pdfjsLib.getDocument>);
 }
-
-describe('pdfParser — legacy generic parser', () => {
-  it('should extract rows from pdf text correctly', async () => {
-    mockPdfDocument([
-      { str: '951 372 G20 2025 6 16 105.84 2024 6 26 104.04 0.00 0.00 620' },
-      { str: ' ' },
-      { str: '952 372 G20 2025 6 16 187.89 2024 8 6 167.02 0.00 0.00 620' },
-      { str: '991 G98 372 25.32 0.00 620' },
-      { str: '801 E11 840 3.71 0.57' },
-      { str: '13001 G51 A -43.94 620' }
-    ]);
-
-    const fakeFile = new File([''], 'dummy.pdf');
-    const data = await extractTableRowsFromPdf(fakeFile);
-    
-    expect(data.rows92A.length).toBe(2);
-    expect(data.rows92A[0].valorRealizacao).toBe('105.84');
-    expect(data.rows92A[1].valorRealizacao).toBe('187.89');
-    expect(data.rows92A[0].codPais).toBe('372');
-    expect(data.rows92A[0].codigo).toBe('G20');
-
-    expect(data.rows92B.length).toBe(1);
-    expect(data.rows92B[0].rendimentoLiquido).toBe('25.32');
-    expect(data.rows92B[0].codigo).toBe('G98');
-
-    expect(data.rows8A.length).toBe(1);
-    expect(data.rows8A[0].rendimentoBruto).toBe('3.71');
-    expect(data.rows8A[0].impostoPago).toBe('0.57');
-
-    expect(data.rowsG13.length).toBe(1);
-    expect(data.rowsG13[0].codigoOperacao).toBe('G51');
-    expect(data.rowsG13[0].titular).toBe('A');
-    expect(data.rowsG13[0].rendimentoLiquido).toBe('-43.94');
-    expect(data.rowsG13[0].paisContraparte).toBe('620');
-  });
-
-  it('should extract Trade Republic 8A rows with E21 (28%) format', async () => {
-    mockPdfDocument([
-      { str: '801' },
-      { str: ' ' },
-      { str: 'E21 (28%)' },
-      { str: ' ' },
-      { str: '276' },
-      { str: ' ' },
-      { str: '110,8900' },
-      { str: ' ' },
-      { str: '0,0000' },
-    ]);
-
-    const fakeFile = new File([''], 'tr.pdf');
-    const data = await extractTableRowsFromPdf(fakeFile);
-    
-    expect(data.rows8A.length).toBe(1);
-    expect(data.rows8A[0].codigo).toBe('E21');
-    expect(data.rows8A[0].codPais).toBe('276');
-    expect(data.rows8A[0].rendimentoBruto).toBe('110.8900');
-    expect(data.rows8A[0].impostoPago).toBe('0.0000');
-  });
-});
 
 describe('parseXtbCapitalGainsPdf', () => {
   it('should extract 9.2A, 9.2B, and G13 rows (no 8A)', async () => {
@@ -104,6 +45,22 @@ describe('parseXtbCapitalGainsPdf', () => {
     expect(data.rows92B.length).toBe(1);
     expect(data.rowsG13.length).toBe(1);
     expect(data.rows8A.length).toBe(0);
+  });
+
+  it('should normalize decimal values consistently in gains rows', async () => {
+    mockPdfDocument([
+      { str: 'Quadro 9.2 A - Alienação Mais-Valias' },
+      { str: '951 372 G20 2025 6 16 105,84 2024 6 26 104,04 0,00 0,00 620' },
+      { str: '991 G98 372 25,32 0,00 620' },
+      { str: '13001 G51 A -43,94 620' },
+    ]);
+
+    const fakeFile = new File([''], 'xtb_gains_commas.pdf');
+    const data = await parseXtbCapitalGainsPdf(fakeFile);
+
+    expect(data.rows92A[0].valorRealizacao).toBe('105.84');
+    expect(data.rows92B[0].rendimentoLiquido).toBe('25.32');
+    expect(data.rowsG13[0].rendimentoLiquido).toBe('-43.94');
   });
 
   it('should throw PdfParsingError when a dividends PDF is uploaded in gains slot', async () => {

@@ -6,6 +6,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 import type { TaxRow, TaxRow92B, TaxRow8A, TaxRowG13, ParsedPdfData } from '../types';
 
+const MAX_PDF_BYTES = 50 * 1024 * 1024;
+const MAX_PDF_PAGES = 200;
+
 // ---------------------------------------------------------------------------
 // Custom error for parsing failures
 // ---------------------------------------------------------------------------
@@ -28,16 +31,49 @@ export class PdfParsingError extends Error {
 // Internal: extract full text from a PDF file
 // ---------------------------------------------------------------------------
 
+function normalizeNumber(value: string): string {
+  return value.replace(/,/g, '.');
+}
+
+function validatePdfSize(file: File): void {
+  if (file.size > MAX_PDF_BYTES) {
+    throw new PdfParsingError(
+      `"${file.name}" exceeds the maximum supported file size.`,
+      'parser.error.file_too_large',
+      { fileName: file.name }
+    );
+  }
+}
+
+function itemToString(item: unknown): string {
+  if (typeof item === 'object' && item !== null && 'str' in item) {
+    const str = (item as { str?: unknown }).str;
+    return typeof str === 'string' ? str : '';
+  }
+  return '';
+}
+
 async function extractPdfText(file: File): Promise<string[]> {
+  validatePdfSize(file);
+
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+  if (pdf.numPages > MAX_PDF_PAGES) {
+    throw new PdfParsingError(
+      `"${file.name}" contains too many pages to be processed safely.`,
+      'parser.error.too_many_pages',
+      { fileName: file.name }
+    );
+  }
 
   const pageTexts: string[] = [];
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    pageTexts.push(content.items.map((item: any) => item.str).join(' '));
+    pageTexts.push(content.items.map(itemToString).join(' '));
   }
+
   return pageTexts;
 }
 
@@ -96,82 +132,69 @@ const TR_REPORT_MARKERS = [
 // Row extractors (pure functions, no file I/O)
 // ---------------------------------------------------------------------------
 
-function extractRows8A(pageTexts: string[]): TaxRow8A[] {
-  const rows: TaxRow8A[] = [];
+function extractRows<T>(
+  pageTexts: string[],
+  sourceRegex: RegExp,
+  buildRow: (match: RegExpExecArray) => T,
+): T[] {
+  const rows: T[] = [];
+
   for (const text of pageTexts) {
-    const regex = new RegExp(REGEX_8A.source, REGEX_8A.flags);
-    let m;
-    while ((m = regex.exec(text)) !== null) {
-      rows.push({
-        codigo: m[1],
-        codPais: m[2],
-        rendimentoBruto: m[3].replace(/,/g, '.'),
-        impostoPago: m[4].replace(/,/g, '.'),
-      });
+    const regex = new RegExp(sourceRegex.source, sourceRegex.flags);
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(text)) !== null) {
+      rows.push(buildRow(match));
     }
   }
+
   return rows;
+}
+
+function extractRows8A(pageTexts: string[]): TaxRow8A[] {
+  return extractRows(pageTexts, REGEX_8A, match => ({
+    codigo: match[1],
+    codPais: match[2],
+    rendimentoBruto: normalizeNumber(match[3]),
+    impostoPago: normalizeNumber(match[4]),
+  }));
 }
 
 function extractRows92A(pageTexts: string[]): TaxRow[] {
-  const rows: TaxRow[] = [];
-  for (const text of pageTexts) {
-    const regex = new RegExp(REGEX_92A.source, REGEX_92A.flags);
-    let m;
-    while ((m = regex.exec(text)) !== null) {
-      rows.push({
-        codPais: m[1],
-        codigo: m[2],
-        anoRealizacao: m[3],
-        mesRealizacao: m[4],
-        diaRealizacao: m[5],
-        valorRealizacao: m[6].replace(',', '.'),
-        anoAquisicao: m[7],
-        mesAquisicao: m[8],
-        diaAquisicao: m[9],
-        valorAquisicao: m[10].replace(',', '.'),
-        despesasEncargos: m[11].replace(',', '.'),
-        impostoPagoNoEstrangeiro: m[12].replace(',', '.'),
-        codPaisContraparte: m[13],
-      });
-    }
-  }
-  return rows;
+  return extractRows(pageTexts, REGEX_92A, match => ({
+    codPais: match[1],
+    codigo: match[2],
+    anoRealizacao: match[3],
+    mesRealizacao: match[4],
+    diaRealizacao: match[5],
+    valorRealizacao: normalizeNumber(match[6]),
+    anoAquisicao: match[7],
+    mesAquisicao: match[8],
+    diaAquisicao: match[9],
+    valorAquisicao: normalizeNumber(match[10]),
+    despesasEncargos: normalizeNumber(match[11]),
+    impostoPagoNoEstrangeiro: normalizeNumber(match[12]),
+    codPaisContraparte: match[13],
+  }));
 }
 
 function extractRows92B(pageTexts: string[]): TaxRow92B[] {
-  const rows: TaxRow92B[] = [];
-  for (const text of pageTexts) {
-    const regex = new RegExp(REGEX_92B.source, REGEX_92B.flags);
-    let m;
-    while ((m = regex.exec(text)) !== null) {
-      rows.push({
-        codigo: m[1],
-        codPais: m[2],
-        rendimentoLiquido: m[3].replace(',', '.'),
-        impostoPagoNoEstrangeiro: m[4].replace(',', '.'),
-        codPaisContraparte: m[5],
-      });
-    }
-  }
-  return rows;
+  return extractRows(pageTexts, REGEX_92B, match => ({
+    codigo: match[1],
+    codPais: match[2],
+    rendimentoLiquido: normalizeNumber(match[3]),
+    impostoPagoNoEstrangeiro: normalizeNumber(match[4]),
+    codPaisContraparte: match[5],
+  }));
 }
 
 function extractRowsG13(pageTexts: string[]): TaxRowG13[] {
-  const rows: TaxRowG13[] = [];
-  for (const text of pageTexts) {
-    const regex = new RegExp(REGEX_G13.source, REGEX_G13.flags);
-    let m;
-    while ((m = regex.exec(text)) !== null) {
-      rows.push({
-        codigoOperacao: m[1],
-        titular: m[2],
-        rendimentoLiquido: m[3].replace(/,/g, '.'),
-        paisContraparte: m[4],
-      });
-    }
-  }
-  return rows;
+  return extractRows(pageTexts, REGEX_G13, match => ({
+    codigoOperacao: match[1],
+    titular: match[2],
+    rendimentoLiquido: normalizeNumber(match[3]),
+    paisContraparte: match[4],
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -302,26 +325,5 @@ export async function parseTradeRepublicPdf(file: File): Promise<ParsedPdfData> 
     rows92A: [],
     rows92B: [],
     rowsG13: [],
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Legacy generic parser (kept for backward compatibility in tests)
-// ---------------------------------------------------------------------------
-
-/**
- * @deprecated Use broker-specific parsers instead:
- *   - parseXtbCapitalGainsPdf
- *   - parseXtbDividendsPdf
- *   - parseTradeRepublicPdf
- */
-export async function extractTableRowsFromPdf(file: File): Promise<ParsedPdfData> {
-  const pageTexts = await extractPdfText(file);
-
-  return {
-    rows8A: extractRows8A(pageTexts),
-    rows92A: extractRows92A(pageTexts),
-    rows92B: extractRows92B(pageTexts),
-    rowsG13: extractRowsG13(pageTexts),
   };
 }

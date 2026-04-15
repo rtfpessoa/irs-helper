@@ -1,6 +1,8 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useId, useState } from 'react';
 import { UploadCloud, CheckCircle, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+
+const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024;
 
 interface FileUploaderProps {
   label: string;
@@ -9,15 +11,35 @@ interface FileUploaderProps {
   onRemove?: () => void;
 }
 
+/** Generic drag-and-drop uploader for one file input. */
 export function FileUploader({ label, accept, onFileSelect, onRemove }: FileUploaderProps) {
   const { t } = useTranslation();
+  const inputId = useId();
   const [isDragActive, setIsDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  const isAcceptedFile = useCallback((file: File) => {
+    const normalizedAccept = accept.trim().toLowerCase();
+    if (!normalizedAccept) {
+      return true;
+    }
+
+    const extension = file.name.includes('.') ? `.${file.name.split('.').pop()?.toLowerCase()}` : '';
+    return normalizedAccept.split(',').map(token => token.trim()).some(token => token === extension);
+  }, [accept]);
+
   const handleFile = useCallback((file: File) => {
+    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+      return;
+    }
+
+    if (!isAcceptedFile(file)) {
+      return;
+    }
+
     setSelectedFile(file);
     onFileSelect(file);
-  }, [onFileSelect]);
+  }, [isAcceptedFile, onFileSelect]);
 
   const handleRemove = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -58,10 +80,10 @@ export function FileUploader({ label, accept, onFileSelect, onRemove }: FileUplo
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      onClick={() => document.getElementById(`file-input-${label}`)?.click()}
+      onClick={() => document.getElementById(inputId)?.click()}
     >
       <input 
-        id={`file-input-${label}`}
+        id={inputId}
         type="file" 
         accept={accept} 
         onChange={handleChange} 

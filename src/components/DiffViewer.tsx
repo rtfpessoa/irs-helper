@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { GitCompare, ChevronDown, ChevronUp, Minus, Plus, Columns, AlignJustify } from 'lucide-react';
+import { GitCompare, ChevronDown, ChevronUp, Columns, AlignJustify } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface DiffViewerProps {
@@ -245,12 +245,13 @@ export function DiffViewer({ originalXml, enrichedXml }: DiffViewerProps) {
                 const line = entry as DiffLine;
                 const isAdded = line.type === 'added';
                 const isRemoved = line.type === 'removed';
-                const isContext = line.type === 'context';
+                const oldLineNumber = line.type === 'added' ? '' : line.lineOld;
+                const newLineNumber = line.type === 'removed' ? '' : line.lineNew;
                 
                 return (
                   <div key={idx} className={`diff-line diff-line--${line.type}`}>
-                    <span className="diff-line__gutter">{isRemoved || isContext ? (line as any).lineOld : ''}</span>
-                    <span className="diff-line__gutter">{isAdded || isContext ? (line as any).lineNew : ''}</span>
+                    <span className="diff-line__gutter">{oldLineNumber}</span>
+                    <span className="diff-line__gutter">{newLineNumber}</span>
                     <span className="diff-line__marker">{isAdded ? '+' : isRemoved ? '-' : ''}</span>
                     {renderLineText(line.text, line.type)}
                   </div>
@@ -268,19 +269,24 @@ export function DiffViewer({ originalXml, enrichedXml }: DiffViewerProps) {
                   );
                 }
                 const row = entry as SplitDiffRow;
+                const left = 'left' in row ? row.left : undefined;
+                const right = 'right' in row ? row.right : undefined;
+                const leftLineNumber = left ? (left.type === 'added' ? '' : left.lineOld) : '';
+                const rightLineNumber = right ? (right.type === 'removed' ? '' : right.lineNew) : '';
+
                 return (
                   <div key={idx} className={`diff-split-row diff-split-row--${row.type}`}>
                     {/* Left Column */}
-                    <div className={`diff-split-side diff-split-side--left ${row.left ? `diff-line--${row.left.type}` : 'diff-line--empty'}`}>
-                      <span className="diff-line__gutter">{row.left?.lineOld ?? ''}</span>
-                      <span className="diff-line__marker">{row.left?.type === 'removed' ? '-' : ''}</span>
-                      {row.left ? renderLineText(row.left.text, row.left.type) : <span className="diff-line__text"></span>}
+                    <div className={`diff-split-side diff-split-side--left ${left ? `diff-line--${left.type}` : 'diff-line--empty'}`}>
+                      <span className="diff-line__gutter">{leftLineNumber}</span>
+                      <span className="diff-line__marker">{left?.type === 'removed' ? '-' : ''}</span>
+                      {left ? renderLineText(left.text, left.type) : <span className="diff-line__text"></span>}
                     </div>
                     {/* Right Column */}
-                    <div className={`diff-split-side diff-split-side--right ${row.right ? `diff-line--${row.right.type}` : 'diff-line--empty'}`}>
-                      <span className="diff-line__gutter">{row.right?.lineNew ?? ''}</span>
-                      <span className="diff-line__marker">{row.right?.type === 'added' ? '+' : ''}</span>
-                      {row.right ? renderLineText(row.right.text, row.right.type) : <span className="diff-line__text"></span>}
+                    <div className={`diff-split-side diff-split-side--right ${right ? `diff-line--${right.type}` : 'diff-line--empty'}`}>
+                      <span className="diff-line__gutter">{rightLineNumber}</span>
+                      <span className="diff-line__marker">{right?.type === 'added' ? '+' : ''}</span>
+                      {right ? renderLineText(right.text, right.type) : <span className="diff-line__text"></span>}
                     </div>
                   </div>
                 );
