@@ -1,0 +1,96 @@
+{
+  "app": {
+    "title": "IRS Helper",
+    "subtitle": "Enriqueça a sua declaração de IRS (Anexo J & Anexo G) com relatórios das corretoras facilmente.",
+    "how_it_works": "Como funciona",
+    "navigation": {
+      "back": "Voltar"
+    },
+    "process": {
+      "button": "Gerar Ficheiro de Importação IRS",
+      "processing": "Processando..."
+    },
+    "result": {
+      "download": "Descarregar Ficheiro Gerado",
+      "start_over": "Começar de novo",
+      "title": "Resultados do Enriquecimento",
+      "subtitle": "Foram adicionadas <strong>{{count}}</strong> linhas no total em {{activeTables}} tabela(s)."
+    },
+    "error": {
+      "no_rows": "Não foram encontradas linhas relevantes no(s) PDF(s) fornecido(s).",
+      "generic": "Ocorreu um erro durante o processamento.",
+      "fallback": "Ocorreu um erro. Por favor, atualize a página."
+    }
+  },
+  "parser": {
+    "error": {
+      "xtb_wrong_file_gains": "\"{{fileName}}\" parece ser um PDF de Dividendos. Por favor, coloque-o no campo de Dividendos XTB.",
+      "xtb_wrong_file_dividends": "\"{{fileName}}\" parece ser um PDF de Mais-valias. Por favor, coloque-o no campo de Mais-valias XTB.",
+      "xtb_no_gains_rows": "Não foram encontrados dados de mais-valias em \"{{fileName}}\". Verifique que este é um relatório de Mais-valias XTB.",
+      "xtb_no_dividends_rows": "Não foram encontrados dados de dividendos em \"{{fileName}}\". Verifique que este é um relatório de Dividendos XTB.",
+      "tr_wrong_file": "\"{{fileName}}\" não parece ser um Relatório de Impostos da Trade Republic. Por favor, carregue o ficheiro correto.",
+      "tr_no_rows": "Não foram encontrados dados de dividendos/juros em \"{{fileName}}\". Verifique que este é um Relatório de Impostos da Trade Republic."
+    }
+  },
+  "uploader": {
+    "xml_lane": "Declaração de IRS Base",
+    "xml_file": "Selecione o seu ficheiro .xml",
+    "xml_description": "Carregue o ficheiro XML exportado do Portal das Finanças.",
+    "brokers_lane": "Relatórios das Corretoras",
+    "brokers_description": "Carregue os relatórios PDF das suas corretoras para extrair dados financeiros.",
+    "xtb_lane": "XTB",
+    "xtb_gains": "PDF de Mais-valias",
+    "xtb_dividends": "PDF de Dividendos",
+    "tr_lane": "Trade Republic",
+    "tr_report": "Relatório de Impostos",
+    "optional": "(Opcional)",
+    "click_to_change": "Clique para alterar",
+    "drag_drop": "Arraste e solte ou clique para navegar",
+    "remove_file": "Remover ficheiro",
+    "xtb_warning_title": "Limitações de Leitura",
+    "xtb_warning_1": "Rendimentos de declaração facultativa (Anexo E 4 B) são ignorados.",
+    "xtb_warning_2": "Ações/Obrigações de entidades residentes em PT (Anexo G 9) são ignoradas.",
+    "xtb_warning_3": "CFDs de fonte estrangeira (Anexo J 9.2 B) são ignorados.",
+    "xtb_warning_4": "Frações de Ações de fonte portuguesa (Anexo G 8) são ignoradas.",
+    "tr_warning_title": "Limitações de Leitura",
+    "tr_warning_1": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Anexo J 9.2 A) são ignorados.",
+    "tr_warning_2": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Anexo J 9.2 B) são ignorados."
+  },
+  "report": {
+    "annex_g": "Anexo G",
+    "annex_j": "Anexo J",
+    "capital_gains": "Mais-Valias",
+    "foreign_income": "Rendimentos Obtidos no Estrangeiro",
+    "rows": "linha",
+    "rows_plural": "linhas",
+    "quadro_g13": {
+      "title": "Quadro G13",
+      "subtitle": "CFDs & Contratos de Opções"
+    },
+    "quadro_8a": {
+      "title": "Quadro 8A",
+      "subtitle": "Dividendos & Juros"
+    },
+    "quadro_92a": {
+      "title": "Quadro 9.2A",
+      "subtitle": "Mais-valias — Vendas & Aquisições"
+    },
+    "quadro_92b": {
+      "title": "Quadro 9.2B",
+      "subtitle": "Outros rendimentos de capitais"
+    }
+  },
+  "diff": {
+    "title": "Comparação Antes / Depois",
+    "unified": "Unificado",
+    "split": "Separado",
+    "collapse": "Colapsar inalteradas",
+    "show_full": "Mostrar ficheiro completo",
+    "unchanged_lines": "{{count}} linha inalterada",
+    "unchanged_lines_plural": "{{count}} linhas inalteradas"
+  },
+  "languages": {
+    "en": "Inglês",
+    "pt": "Português (Portugal)"
+  }
+}

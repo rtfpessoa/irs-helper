@@ -1,0 +1,96 @@
+{
+  "app": {
+    "title": "IRS Helper",
+    "subtitle": "Enrich your IRS declaration (Anexo J & Anexo G) with broker reports easily.",
+    "how_it_works": "How it works",
+    "navigation": {
+      "back": "Back to Home"
+    },
+    "process": {
+      "button": "Generate IRS Import File",
+      "processing": "Processing..."
+    },
+    "result": {
+      "download": "Download Generated File",
+      "start_over": "Start Over",
+      "title": "Enrichment Results",
+      "subtitle": "<strong>{{count}}</strong> total rows were added across {{activeTables}} table(s)."
+    },
+    "error": {
+      "no_rows": "No relevant rows found in the provided PDF(s).",
+      "generic": "An error occurred during processing.",
+      "fallback": "Something went wrong. Please refresh the page."
+    }
+  },
+  "parser": {
+    "error": {
+      "xtb_wrong_file_gains": "\"{{fileName}}\" appears to be a Dividends PDF. Please place it in the XTB Dividends slot instead.",
+      "xtb_wrong_file_dividends": "\"{{fileName}}\" appears to be a Capital Gains PDF. Please place it in the XTB Capital Gains slot instead.",
+      "xtb_no_gains_rows": "No capital gains data found in \"{{fileName}}\". Please verify this is an XTB Capital Gains report.",
+      "xtb_no_dividends_rows": "No dividend data found in \"{{fileName}}\". Please verify this is an XTB Dividends report.",
+      "tr_wrong_file": "\"{{fileName}}\" does not appear to be a Trade Republic Tax Report. Please upload the correct file.",
+      "tr_no_rows": "No dividend/interest data found in \"{{fileName}}\". Please verify this is a Trade Republic Tax Report."
+    }
+  },
+  "uploader": {
+    "xml_lane": "Base IRS Declaration",
+    "xml_file": "Select your .xml file",
+    "xml_description": "Upload the XML file exported from the Tax Authority portal.",
+    "brokers_lane": "Broker Reports",
+    "brokers_description": "Upload PDF reports from your brokers to extract financial data.",
+    "xtb_lane": "XTB",
+    "xtb_gains": "Capital Gains PDF",
+    "xtb_dividends": "Dividends PDF",
+    "tr_lane": "Trade Republic",
+    "tr_report": "Tax Report PDF",
+    "optional": "(Optional)",
+    "click_to_change": "Click to change",
+    "drag_drop": "Drag & drop or click to browse",
+    "remove_file": "Remove file",
+    "xtb_warning_title": "Parsing Limitations",
+    "xtb_warning_1": "Optional 'RENDIMENTOS OBTIDOS EM TERRITÓRIO PORTUGUÊS' (Annex E 4 B) are ignored.",
+    "xtb_warning_2": "Shares/Bonds from PT-resident entities (Annex G 9) are ignored.",
+    "xtb_warning_3": "Foreign Sourced CFDs (Annex J 9.2 B) are ignored.",
+    "xtb_warning_4": "PT Sourced Fractional Shares (Annex G 8) are ignored.",
+    "tr_warning_title": "Parsing Limitations",
+    "tr_warning_1": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Annex J 9.2 A) are ignored.",
+    "tr_warning_2": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Annex J 9.2 B) are ignored."
+  },
+  "report": {
+    "annex_g": "Annex G",
+    "annex_j": "Annex J",
+    "capital_gains": "Capital Gains",
+    "foreign_income": "Foreign Income",
+    "rows": "row",
+    "rows_plural": "rows",
+    "quadro_g13": {
+      "title": "Quadro G13",
+      "subtitle": "CFDs & Option Contracts"
+    },
+    "quadro_8a": {
+      "title": "Quadro 8A",
+      "subtitle": "Dividends & Interest"
+    },
+    "quadro_92a": {
+      "title": "Quadro 9.2A",
+      "subtitle": "Capital Gains — Sells & Acquisitions"
+    },
+    "quadro_92b": {
+      "title": "Quadro 9.2B",
+      "subtitle": "Other Investment Income"
+    }
+  },
+  "diff": {
+    "title": "Before / After Comparison",
+    "unified": "Unified",
+    "split": "Split",
+    "collapse": "Collapse unchanged",
+    "show_full": "Show full file",
+    "unchanged_lines": "{{count}} unchanged line",
+    "unchanged_lines_plural": "{{count}} unchanged lines"
+  },
+  "languages": {
+    "en": "English",
+    "pt": "Português (Portugal)"
+  }
+}
