@@ -15,7 +15,7 @@ i18n
     fallbackLng: 'pt',
     lng: 'pt', // Default language
     interpolation: {
-      escapeValue: false,
+      escapeValue: true, // Re-enable XSS protection for interpolated values
     },
     detection: {
       order: ['localStorage', 'navigator'],

@@ -22,7 +22,11 @@ export const HowItWorksPage = () => {
       
       <div className="glass-panel">
         <div className="markdown-content">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          <ReactMarkdown 
+            remarkPlugins={[remarkGfm]}
+            disallowedElements={['script', 'style', 'iframe', 'object', 'embed']}
+            unwrapDisallowed={true}
+          >
             {markdownContent}
           </ReactMarkdown>
         </div>
