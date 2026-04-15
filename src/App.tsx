@@ -5,6 +5,7 @@ import { HomePage } from './components/HomePage';
 import { HowItWorksPage } from './components/HowItWorksPage';
 import { Languages, Sun, Moon } from 'lucide-react';
 import { FaGithub } from 'react-icons/fa';
+import { Analytics } from '@vercel/analytics/react';
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -70,6 +71,7 @@ function App() {
         </a>
         <span className="app-footer__author">Diogo Almeida</span>
       </footer>
+      <Analytics />
     </div>
   );
 }
