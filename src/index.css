@@ -1488,21 +1488,6 @@ body {
   line-height: 1.5;
 }
 
-.donation-modal__iframe-shell {
-  border-radius: 14px;
-  overflow: hidden;
-  border: 1px solid var(--panel-border);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.donation-modal__iframe {
-  display: block;
-  width: 100%;
-  height: 540px;
-  border: 0;
-  background: #ffffff;
-}
-
 .donation-modal__actions {
   display: flex;
   gap: 0.75rem;
@@ -1512,6 +1497,7 @@ body {
 .donation-modal__action {
   flex: 1;
   text-decoration: none;
+  padding: 0.625rem 1.25rem !important;
 }
 
 @media (max-width: 640px) {

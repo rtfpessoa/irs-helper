@@ -447,16 +447,6 @@ export function HomePage() {
               <p className="donation-modal__subtitle">{t('app.bmc.popup.subtitle')}</p>
             </div>
 
-            <div className="donation-modal__iframe-shell">
-              <iframe
-                className="donation-modal__iframe"
-                src={donationWidgetUrl}
-                title={t('app.bmc.popup.iframe_title')}
-                loading="lazy"
-                allow="payment *; publickey-credentials-get *"
-              />
-            </div>
-
             <div className="donation-modal__actions">
               <button className="btn btn-secondary donation-modal__action" onClick={() => setShowDonationPrompt(false)}>
                 {t('app.bmc.popup.close')}
