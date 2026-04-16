@@ -3,6 +3,12 @@
     "title": "IRS Helper",
     "subtitle": "Enrich your IRS declaration (Anexo J & Anexo G) with broker reports easily.",
     "how_it_works": "How it works",
+    "bmc": {
+      "button": "Buy me a coffee",
+      "alt": "Buy me a coffee",
+      "description": "Support me on Buy Me a Coffee!",
+      "message": "Did this help? Buy me a coffee"
+    },
     "navigation": {
       "back": "Back to Home"
     },

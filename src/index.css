@@ -1222,7 +1222,28 @@ body {
 .main-panel-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
   margin-bottom: 1.25rem;
+}
+
+.bmc-button {
+  background: #5F7FFF !important;
+  border-color: #5F7FFF !important;
+  color: #fff !important;
+}
+
+.bmc-button:hover {
+  background: #4a6be8 !important;
+  border-color: #4a6be8 !important;
+  color: #fff !important;
+}
+
+/* Hide the default BMC floating button visually but keep it in the DOM so
+   programmatic .click() still opens the on-page popup */
+#bmc-wbtn {
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 .header__actions {

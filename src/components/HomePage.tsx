@@ -28,7 +28,7 @@ interface BrokerSection {
  * Home page for the IRS enrichment workflow: upload files, process data, and review outputs.
  */
 export function HomePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [xmlFile, setXmlFile] = useState<File | null>(null);
   const [xtbCapitalGainsPdf, setXtbCapitalGainsPdf] = useState<File | null>(null);
   const [xtbDividendsPdf, setXtbDividendsPdf] = useState<File | null>(null);
@@ -38,12 +38,85 @@ export function HomePage() {
   const [result, setResult] = useState<EnrichmentResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const bmcBtnRef = useRef<HTMLElement | null>(null);
+
+  const initializeBmcWidget = () => {
+    window.dispatchEvent(new Event('DOMContentLoaded'));
+  };
 
   useEffect(() => {
     if (result && resultsRef.current) {
       resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [result]);
+
+  useEffect(() => {
+    // Watch for the BMC widget button being injected into the DOM
+    const observer = new MutationObserver(() => {
+      const btn = document.getElementById('bmc-wbtn');
+      if (btn) {
+        bmcBtnRef.current = btn as HTMLElement;
+        observer.disconnect();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    const existingButton = document.getElementById('bmc-wbtn');
+    if (existingButton) {
+      bmcBtnRef.current = existingButton as HTMLElement;
+    }
+
+    const existingScript = document.querySelector('script[data-name="BMC-Widget"]') as HTMLScriptElement | null;
+    if (existingScript) {
+      if (!existingButton) {
+        initializeBmcWidget();
+      }
+      return () => observer.disconnect();
+    }
+
+    if (!existingScript) {
+      const script = document.createElement('script');
+      script.setAttribute('data-name', 'BMC-Widget');
+      script.setAttribute('data-cfasync', 'false');
+      script.src = 'https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js';
+      script.setAttribute('data-id', 'diogo.almeida');
+      script.setAttribute('data-description', t('app.bmc.description'));
+      script.setAttribute('data-message', t('app.bmc.message'));
+      script.setAttribute('data-color', '#5F7FFF');
+      script.setAttribute('data-position', 'Right');
+      script.setAttribute('data-x_margin', '18');
+      script.setAttribute('data-y_margin', '18');
+      script.onload = () => {
+        initializeBmcWidget();
+      };
+      document.body.appendChild(script);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const existingScript = document.querySelector('script[data-name="BMC-Widget"]') as HTMLScriptElement | null;
+    if (!existingScript) {
+      return;
+    }
+
+    existingScript.setAttribute('data-description', t('app.bmc.description'));
+    existingScript.setAttribute('data-message', t('app.bmc.message'));
+  }, [i18n.language, t]);
+
+  const handleBmcClick = () => {
+    const btn = bmcBtnRef.current ?? document.getElementById('bmc-wbtn');
+    if (btn) {
+      btn.click();
+    } else {
+      initializeBmcWidget();
+      window.setTimeout(() => {
+        const retriedButton = bmcBtnRef.current ?? document.getElementById('bmc-wbtn');
+        retriedButton?.click();
+      }, 150);
+    }
+  };
 
   const hasBrokerFile = xtbCapitalGainsPdf || xtbDividendsPdf || tradeRepublicPdf || trading212Pdf;
 
@@ -163,6 +236,14 @@ export function HomePage() {
             <Info size={18} />
             {t('app.how_it_works')}
           </Link>
+          <button onClick={handleBmcClick} className="nav-button bmc-button">
+            <img
+              src="https://cdn.buymeacoffee.com/buttons/bmc-new-btn-logo.svg"
+              alt={t('app.bmc.alt')}
+              style={{ height: '16px', width: '16px' }}
+            />
+            {t('app.bmc.button')}
+          </button>
         </div>
 
         <div className="uploaders-container">

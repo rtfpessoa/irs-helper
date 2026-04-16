@@ -3,6 +3,12 @@
     "title": "IRS Helper",
     "subtitle": "Enriqueça a sua declaração de IRS (Anexo J & Anexo G) com relatórios das corretoras facilmente.",
     "how_it_works": "Como funciona",
+    "bmc": {
+      "button": "Paga-me um café",
+      "alt": "Paga-me um café",
+      "description": "Apoia-me no Buy Me a Coffee!",
+      "message": "Ajudei-te? Paga-me um café"
+    },
     "navigation": {
       "back": "Voltar"
     },
