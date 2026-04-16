@@ -16,7 +16,17 @@ export default defineConfig({
           if (chunkInfo.name === 'serviceWorker') {
             return 'assets/[name].js';
           }
+          if (chunkInfo.name.includes('pdf.worker')) {
+            return 'assets/pdf.worker.mjs';
+          }
           return 'assets/[name]-[hash].js';
+        },
+        assetFileNames: (assetInfo) => {
+          const assetName = assetInfo.name ?? '';
+          if (assetName.includes('pdf.worker')) {
+            return 'assets/pdf.worker.mjs';
+          }
+          return 'assets/[name]-[hash][extname]';
         },
       },
     },

@@ -2,16 +2,18 @@
 
 declare const self: ServiceWorkerGlobalScope;
 
-const CACHE_NAME = 'irs-helper-v1';
+const CACHE_NAME = 'irs-helper-v2';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
   '/favicon.svg',
+  '/assets/pdf.worker.mjs',
 ];
 
 // Files matching these patterns will be cached
 const CACHE_PATTERNS = [
   /\.js$/,
+  /\.mjs$/,
   /\.css$/,
   /\.json$/,
   /\.svg$/,
@@ -23,7 +25,7 @@ const CACHE_PATTERNS = [
   /\.ttf$/,
   /\.eot$/,
   // PDF.js worker files
-  /pdf\.worker(?:\.min)?\.js$/,
+  /pdf\.worker(?:\.min)?\.(?:js|mjs)$/,
 ];
 
 // Install event - cache essential assets
