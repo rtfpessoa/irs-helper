@@ -128,6 +128,50 @@ const TR_REPORT_MARKERS = [
   /Relatório\s*(?:de\s*)?Impost/i,
 ];
 
+/** Known markers for Trading 212 Annual Statement */
+const T212_REPORT_MARKERS = [
+  /Trading\s*212/i,
+  /Annual\s*Statement/i,
+  /Trading\s*212\s*Markets/i,
+];
+
+// ---------------------------------------------------------------------------
+// Country name → IRS 3-digit code mapping (shared utility)
+// ---------------------------------------------------------------------------
+
+const COUNTRY_NAME_TO_CODE: Record<string, string> = {
+  'Germany': '276',
+  'Australia': '036',
+  'Austria': '040',
+  'Belgium': '056',
+  'Brazil': '076',
+  'Canada': '124',
+  'China': '156',
+  'Cyprus': '196',
+  'Denmark': '208',
+  'Spain': '724',
+  'United States': '840',
+  'USA': '840',
+  'US': '840',
+  'Finland': '246',
+  'France': '250',
+  'Ireland': '372',
+  'Italy': '380',
+  'Japan': '392',
+  'Luxembourg': '442',
+  'Norway': '578',
+  'Netherlands': '528',
+  'Portugal': '620',
+  'United Kingdom': '826',
+  'UK': '826',
+  'Sweden': '752',
+  'Switzerland': '756',
+};
+
+export function resolveCountryCode(name: string): string | undefined {
+  return COUNTRY_NAME_TO_CODE[name];
+}
+
 // ---------------------------------------------------------------------------
 // Row extractors (pure functions, no file I/O)
 // ---------------------------------------------------------------------------
@@ -316,6 +360,104 @@ export async function parseTradeRepublicPdf(file: File): Promise<ParsedPdfData> 
     throw new PdfParsingError(
       `No dividend/interest rows found in "${file.name}". Please verify this is a Trade Republic Tax Report with Quadro 8A data.`,
       'parser.error.tr_no_rows',
+      { fileName: file.name }
+    );
+  }
+
+  return {
+    rows8A,
+    rows92A: [],
+    rows92B: [],
+    rowsG13: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Trading 212 — custom extraction (non-IRS-formatted PDF)
+// ---------------------------------------------------------------------------
+
+/** Strip thousand-separator commas (T212 uses English number format). */
+function normalizeT212Number(value: string): string {
+  return value.replace(/,/g, '');
+}
+
+/** Extract a €-prefixed amount from the Overview section. */
+function extractOverviewAmount(fullText: string, label: RegExp): number {
+  const match = fullText.match(new RegExp(label.source + '\\s+€([\\d,]+(?:\\.\\d+)?)', label.flags));
+  if (!match) return 0;
+  return parseFloat(normalizeT212Number(match[1])) || 0;
+}
+
+/**
+ * Parse a Trading 212 Annual Statement PDF.
+ * Extracts:
+ *   - Interest on cash + Share lending interest → Quadro 8A (E21, Cyprus 196)
+ *   - Dividends by country → Quadro 8A (E11, per country)
+ * Throws a PdfParsingError if the file doesn't look like a T212 report.
+ */
+export async function parseTrading212Pdf(file: File): Promise<ParsedPdfData> {
+  const pageTexts = await extractPdfText(file);
+  const fullText = pageTexts.join(' ');
+
+  // Validate this looks like a Trading 212 document
+  const looksLikeT212 = matchesAnyMarker(fullText, T212_REPORT_MARKERS);
+
+  if (!looksLikeT212) {
+    throw new PdfParsingError(
+      `"${file.name}" does not appear to be a Trading 212 Annual Statement. Please upload the correct file.`,
+      'parser.error.t212_wrong_file',
+      { fileName: file.name }
+    );
+  }
+
+  const rows8A: TaxRow8A[] = [];
+
+  // --- Interest on cash + Share lending interest (E21, Cyprus 196) ---
+  const interestOnCash = extractOverviewAmount(fullText, /Interest\s+on\s+cash/i);
+  const shareLendingInterest = extractOverviewAmount(fullText, /Share\s+lending\s+interest/i);
+  const totalInterest = interestOnCash + shareLendingInterest;
+
+  if (totalInterest > 0) {
+    rows8A.push({
+      codigo: 'E21',
+      codPais: '196',
+      rendimentoBruto: totalInterest.toFixed(2),
+      impostoPago: '0.00',
+    });
+  }
+
+  // --- Dividends by country (E11, per country) ---
+  const divSectionMatch = fullText.match(
+    /NET\s+AMOUNT\s+\(EUR\)\s+(.*?)Dividends\s+by\s+instrument/s
+  );
+
+  if (divSectionMatch) {
+    const divText = divSectionMatch[1];
+    // Each row: <Country Name>  <Gross>  <Rate%|->  <WHT|->  <Net>
+    const divRowRegex = /((?:[A-Z][a-z]+)(?:\s+[A-Z][a-z]+)*)\s+([\d,.]+)\s+(?:[\d.]+%|-)\s+([\d,.]+|-)\s+[\d,.]+/g;
+    let match: RegExpExecArray | null;
+
+    while ((match = divRowRegex.exec(divText)) !== null) {
+      const countryName = match[1];
+      const grossAmount = normalizeT212Number(match[2]);
+      const wht = match[3] === '-' ? '0.00' : normalizeT212Number(match[3]);
+      const countryCode = resolveCountryCode(countryName);
+
+      if (countryCode) {
+        rows8A.push({
+          codigo: 'E11',
+          codPais: countryCode,
+          rendimentoBruto: grossAmount,
+          impostoPago: wht,
+        });
+      }
+    }
+  }
+
+  if (rows8A.length === 0) {
+    throw new PdfParsingError(
+      `No dividend/interest data found in "${file.name}". Please verify this is a Trading 212 Annual Statement.`,
+      'parser.error.t212_no_rows',
       { fileName: file.name }
     );
   }

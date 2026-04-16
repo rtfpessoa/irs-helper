@@ -370,6 +370,11 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+.broker-badge--t212 {
+  background: #0099fd;
+  color: #ffffff;
+}
+
 [data-theme="light"] .broker-badge--tr {
   border-color: #000000;
 }

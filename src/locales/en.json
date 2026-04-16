@@ -30,6 +30,8 @@
       "xtb_no_dividends_rows": "No dividend data found in \"{{fileName}}\". Please verify this is an XTB Dividends report.",
       "tr_wrong_file": "\"{{fileName}}\" does not appear to be a Trade Republic Tax Report. Please upload the correct file.",
       "tr_no_rows": "No dividend/interest data found in \"{{fileName}}\". Please verify this is a Trade Republic Tax Report.",
+      "t212_wrong_file": "\"{{fileName}}\" does not appear to be a Trading 212 Annual Statement. Please upload the correct file.",
+      "t212_no_rows": "No dividend/interest data found in \"{{fileName}}\". Please verify this is a Trading 212 Annual Statement.",
       "file_too_large": "\"{{fileName}}\" is too large to process safely. Please provide a smaller PDF.",
       "too_many_pages": "\"{{fileName}}\" has too many pages to process safely."
     }
@@ -45,6 +47,8 @@
     "xtb_dividends": "Dividends and Interest PDF",
     "tr_lane": "Trade Republic",
     "tr_report": "Tax Report PDF",
+    "t212_lane": "Trading 212",
+    "t212_report": "Annual Statement PDF",
     "optional": "(Optional)",
     "click_to_change": "Click to change",
     "drag_drop": "Drag & drop or click to browse",
@@ -56,7 +60,9 @@
     "xtb_warning_4": "PT Sourced Fractional Shares (Annex G 8) are ignored.",
     "tr_warning_title": "Parsing Limitations",
     "tr_warning_1": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Annex J 9.2 A) are ignored.",
-    "tr_warning_2": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Annex J 9.2 B) are ignored."
+    "tr_warning_2": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Annex J 9.2 B) are ignored.",
+    "t212_warning_title": "Parsing Limitations",
+    "t212_warning_1": "Capital gains from sell trades/closed positions (Annex J 9.2A) are not yet supported."
   },
   "report": {
     "annex_g": "Annex G",

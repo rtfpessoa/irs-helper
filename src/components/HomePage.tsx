@@ -33,6 +33,7 @@ export function HomePage() {
   const [xtbCapitalGainsPdf, setXtbCapitalGainsPdf] = useState<File | null>(null);
   const [xtbDividendsPdf, setXtbDividendsPdf] = useState<File | null>(null);
   const [tradeRepublicPdf, setTradeRepublicPdf] = useState<File | null>(null);
+  const [trading212Pdf, setTrading212Pdf] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<EnrichmentResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +45,7 @@ export function HomePage() {
     }
   }, [result]);
 
-  const hasBrokerFile = xtbCapitalGainsPdf || xtbDividendsPdf || tradeRepublicPdf;
+  const hasBrokerFile = xtbCapitalGainsPdf || xtbDividendsPdf || tradeRepublicPdf || trading212Pdf;
 
   const brokerSections: BrokerSection[] = useMemo(
     () => [
@@ -86,8 +87,22 @@ export function HomePage() {
           },
         ],
       },
+      {
+        badge: 'T212',
+        badgeClass: 'broker-badge--t212',
+        laneKey: 'uploader.t212_lane',
+        warningTitleKey: 'uploader.t212_warning_title',
+        warningKeys: ['uploader.t212_warning_1'],
+        uploaders: [
+          {
+            labelKey: 'uploader.t212_report',
+            file: trading212Pdf,
+            setFile: setTrading212Pdf,
+          },
+        ],
+      },
     ],
-    [xtbCapitalGainsPdf, xtbDividendsPdf, tradeRepublicPdf],
+    [xtbCapitalGainsPdf, xtbDividendsPdf, tradeRepublicPdf, trading212Pdf],
   );
 
   const handleProcess = async () => {
@@ -105,6 +120,7 @@ export function HomePage() {
         xtbCapitalGainsPdf,
         xtbDividendsPdf,
         tradeRepublicPdf,
+        trading212Pdf,
       });
 
       setResult(enrichmentResult);

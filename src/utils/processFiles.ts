@@ -1,5 +1,6 @@
 import {
   parseTradeRepublicPdf,
+  parseTrading212Pdf,
   parseXtbCapitalGainsPdf,
   parseXtbDividendsPdf,
 } from './pdfParser';
@@ -13,6 +14,7 @@ export interface ProcessTaxFilesInput {
   xtbCapitalGainsPdf?: File | null;
   xtbDividendsPdf?: File | null;
   tradeRepublicPdf?: File | null;
+  trading212Pdf?: File | null;
 }
 
 interface ParseJob {
@@ -89,6 +91,11 @@ export async function processTaxFiles(input: ProcessTaxFilesInput): Promise<Enri
       file: input.tradeRepublicPdf,
       parser: parseTradeRepublicPdf,
       brokerName: 'Trade Republic',
+    },
+    {
+      file: input.trading212Pdf,
+      parser: parseTrading212Pdf,
+      brokerName: 'Trading 212',
     },
   ];
 
