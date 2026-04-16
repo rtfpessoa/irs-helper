@@ -4,15 +4,15 @@
     "subtitle": "Easily fill your IRS Annexes G and J with broker annual reports.",
     "how_it_works": "How it works",
     "bmc": {
-      "button": "Buy me a coffee",
-      "alt": "Buy me a coffee",
+      "button": "Support the project",
+      "alt": "Support the project",
       "popup": {
         "title": "Did I save you time?",
-        "subtitle": "Your file is ready. If this saved you time, consider supporting the project with a coffee. Thank you!",
+        "subtitle": "Your file is ready. If this saved you time, consider supporting the project. Thank you!",
         "close": "Maybe later",
-        "open_link": "Open Buy Me a Coffee",
-        "iframe_title": "Buy Me a Coffee donation",
-        "widget_description": "Support IRS Helper on Buy Me a Coffee"
+        "open_link": "Open support page",
+        "iframe_title": "Project support",
+        "widget_description": "Support IRS Helper"
       }
     },
     "navigation": {

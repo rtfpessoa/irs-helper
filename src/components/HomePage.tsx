@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { AlertCircle, AlertTriangle, Download, Info, Loader2, X } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Coins, Download, Info, Loader2, X } from 'lucide-react';
 import { DiffViewer } from './DiffViewer';
 import { EnrichmentReport } from './EnrichmentReport';
 import { FileUploader } from './FileUploader';
@@ -202,11 +202,7 @@ export function HomePage() {
             rel="noopener noreferrer"
             className="nav-button bmc-button"
           >
-            <img
-              src="https://cdn.buymeacoffee.com/buttons/bmc-new-btn-logo.svg"
-              alt={t('app.bmc.alt')}
-              style={{ height: '16px', width: '16px' }}
-            />
+            <Coins size={16} aria-hidden="true" />
             {t('app.bmc.button')}
           </a>
         </div>
