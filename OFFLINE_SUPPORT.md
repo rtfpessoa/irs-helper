@@ -13,14 +13,14 @@ The application now includes comprehensive offline support through:
 
 ### First Load (with internet)
 1. When the user first loads the application, the browser downloads all necessary files
-2. The service worker (from `/assets/serviceWorker.js`) intercepts all network requests
+2. In production builds, the service worker (from `/service-worker.js`) intercepts network requests
 3. Successfully loaded files matching cacheable patterns are automatically cached:
-   - JavaScript files (`.js`)
+   - JavaScript files (`.js`, including module bundles)
    - Stylesheets (`.css`)
    - Locale files (`.json`)
    - Images and icons (`.svg`, `.png`, `.jpg`, etc.)
    - Font files (`.woff2`, `.ttf`, etc.)
-   - PDF.js worker files
+   - PDF.js worker file (`/assets/pdf.worker.js`)
 
 ### Subsequent Loads & Offline Use
 1. **Cache-First Strategy**: The service worker serves files from cache when available
@@ -49,24 +49,30 @@ The application now includes comprehensive offline support through:
 - Sets dark/light theme support
 - Defines app shortcuts and capabilities
 
-**Registration (`src/main.tsx` + `public/sw-register.js`)**
-- Service worker is registered with dual fallback support
-- Registration happens after page load to avoid blocking
-- Both redundant registration methods ensure compatibility
+**Registration (`src/main.tsx`)**
+- Service worker is registered once, after page load
+- Registration runs only in production (`import.meta.env.PROD`)
+- Registration path is `/service-worker.js` with scope `/`
+- This avoids localhost MIME errors during Vite development
+
+**Manifest loading (`index.html`)**
+- Manifest is loaded as `/manifest.json` with `crossorigin="use-credentials"`
+- This supports protected preview environments that require credentials
 
 ## Testing Offline Functionality
 
 ### In Development
 1. Run `npm run dev` to start the development server
-2. Open DevTools > Application > Service Workers
-3. Check the "Offline" checkbox to simulate offline mode
-4. The app should continue working without any network requests
+2. Service worker is intentionally not registered in dev mode
+3. No offline caching behavior is expected in `npm run dev`
+4. Use a production build to validate offline behavior
 
 ### In Production
 1. Build with `npm run build`
 2. Serve the `dist/` folder locally or deploy
 3. First load must be online to cache all files
-4. After first load, the app works fully offline
+4. After first load, the app works offline from cache
+5. Confirm in DevTools > Application > Service Workers that `/service-worker.js` is active
 
 ## Installation as PWA
 
@@ -95,22 +101,21 @@ src/
 
 public/
 ├── manifest.json           # PWA manifest
-├── sw-register.js          # Fallback service worker registration
 └── ...
 
 dist/
+├── service-worker.js       # Compiled service worker (root scope)
 ├── assets/
-│   ├── serviceWorker.js    # Compiled service worker
 │   ├── main-*.js           # App bundle
 │   ├── main-*.css          # Styles
-│   └── pdf.worker-*.mjs    # PDF.js worker
+│   └── pdf.worker.js       # Stable PDF.js worker filename
 └── index.html
 ```
 
 ## Cache Invalidation
 
 When you need to force users to get new versions:
-1. Update `CACHE_NAME` in `src/serviceWorker.ts` (e.g., from `'irs-helper-v1'` to `'irs-helper-v2'`)
+1. Increment `CACHE_NAME` in `src/serviceWorker.ts` (e.g., `'irs-helper-v4'` -> `'irs-helper-v5'`)
 2. Rebuild the project: `npm run build`
 3. Deploy to production
 4. The service worker will automatically clean up old caches
@@ -135,11 +140,19 @@ When you need to force users to get new versions:
 - Check browser DevTools > Application > Service Workers
 - Verify the app is served over HTTPS (or localhost)
 - Check console for error messages
+- Ensure the script URL is `/service-worker.js` (not under `/assets/`)
+- In dev mode (`npm run dev`), registration is intentionally skipped
+
+### Manifest fetch failed (401)
+- If running in a protected preview environment, keep:
+   `<link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />`
+- Verify your preview auth/session is active in the browser
 
 ### App not working offline
 - First load must be completely online to cache all files
 - Wait for "Service Worker registered successfully" message in console
 - Check Network tab in DevTools to see what's being cached
+- Verify `/assets/pdf.worker.js` is reachable and cached
 
 ### Cache seems outdated
 - Force refresh the page (Cmd+Shift+R on Mac, Ctrl+Shift+R on Windows)
