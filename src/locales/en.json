@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "IRS Helper",
-    "subtitle": "Enrich your IRS declaration (Anexo J & Anexo G) with broker reports easily.",
+    "subtitle": "Easily fill IRS Annexes J and G with broker annual reports.",
     "how_it_works": "How it works",
     "bmc": {
       "button": "Buy me a coffee",
@@ -19,8 +19,9 @@
     "result": {
       "download": "Download Generated File",
       "start_over": "Start Over",
-      "title": "Enrichment Results",
-      "subtitle": "{{count}} total rows were added across {{activeTables}} table(s)."
+      "title": "Processing Results",
+      "subtitle": "{{count}} total rows were added across {{activeTables}} table(s).",
+      "disclaimer": "Always manually verify that the generated values are correct and placed in the right fields of the IRS form. This is an open-source project aimed at making the IRS filing process easier — it is not a substitute for professional accounting advice."
     },
     "error": {
       "no_rows": "No relevant rows found in the provided PDF(s).",

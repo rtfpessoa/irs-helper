@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "IRS Helper",
-    "subtitle": "Enriqueça a sua declaração de IRS (Anexo J & Anexo G) com relatórios das corretoras facilmente.",
+    "subtitle": "Preencha facilmente os Anexos J e G do IRS com relatórios anuais das corretoras",
     "how_it_works": "Como funciona",
     "bmc": {
       "button": "Paga-me um café",
@@ -19,8 +19,9 @@
     "result": {
       "download": "Descarregar Ficheiro Gerado",
       "start_over": "Começar de novo",
-      "title": "Resultados do Enriquecimento",
-      "subtitle": "Foram adicionadas {{count}} linhas no total em {{activeTables}} tabela(s)."
+      "title": "Resultados do Processamento",
+      "subtitle": "Foram adicionadas {{count}} linhas no total em {{activeTables}} tabela(s).",
+      "disclaimer": "Verifique sempre manualmente se os valores gerados são corretos e estão nos campos certos do formulário IRS. Este é um projeto de código aberto com o objetivo de facilitar o preenchimento do IRS — não substitui aconselhamento contabilístico profissional."
     },
     "error": {
       "no_rows": "Não foram encontradas linhas relevantes no(s) PDF(s) fornecido(s).",

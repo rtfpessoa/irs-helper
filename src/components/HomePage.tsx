@@ -348,6 +348,13 @@ export function HomePage() {
               {error}
             </div>
           )}
+
+          {result && (
+            <div className="status-msg status-warning">
+              <AlertTriangle size={20} />
+              {t('app.result.disclaimer')}
+            </div>
+          )}
         </div>
       </main>
 
