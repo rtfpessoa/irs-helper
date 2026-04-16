@@ -76,4 +76,9 @@ npm run build
 
 ## License
 
-License not yet defined.
+This project is licensed under the PolyForm Noncommercial License 1.0.0.
+
+- You may use, copy, modify, and distribute this software for non-commercial purposes.
+- Commercial use is not permitted without a separate commercial license from the copyright holder.
+
+See [LICENSE](LICENSE) for the full text.
