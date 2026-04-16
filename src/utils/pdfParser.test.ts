@@ -65,6 +65,21 @@ describe('parseXtbCapitalGainsPdf', () => {
     expect(data.rowsG13[0].rendimentoLiquido).toBe('-43.94');
   });
 
+  it('should parse 9.2A rows whose source line number is above 999', async () => {
+    mockPdfDocument([
+      { str: 'Quadro 9.2 A - Alienacao Mais-Valias' },
+      { str: '1000 372 G20 2025 6 16 105.84 2024 6 26 104.04 0.00 0.00 620' },
+      { str: '1001 372 G20 2025 6 17 205.84 2024 6 27 154.04 1.00 0.00 620' },
+    ]);
+
+    const fakeFile = new File([''], 'xtb_gains_above_999.pdf');
+    const data = await parseXtbCapitalGainsPdf(fakeFile);
+
+    expect(data.rows92A.length).toBe(2);
+    expect(data.rows92A[0].valorRealizacao).toBe('105.84');
+    expect(data.rows92A[1].valorRealizacao).toBe('205.84');
+  });
+
   it('should throw PdfParsingError when a dividends PDF is uploaded in gains slot', async () => {
     mockPdfDocument([
       { str: 'Quadro 8 A - Dividendos e Juros' },

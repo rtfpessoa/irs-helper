@@ -88,11 +88,11 @@ const REGEX_8A = /(?:^|\s)\d{3}\s+(E\d{2})\s*(?:\(\d+%?\))?\s+(\d{3})\s+([\d.,-]
 
 // Table 9.2 A — capital gains (share/ETF sells & acquisitions)
 // Example: 951 372 G20 2025 6 16 105.84 2024 6 26 104.04 0.00 0.00 620
-const REGEX_92A = /(?:^|\s)\d{3}\s+(\d{3})\s+(G\d{2})\s+(\d{4})\s+(\d{1,2})\s+(\d{1,2})\s+([\d.,-]+)\s+(\d{4})\s+(\d{1,2})\s+(\d{1,2})\s+([\d.,-]+)\s+([\d.,-]+)\s+([\d.,-]+)\s+(\d{3})(?=\s|$)/g;
+const REGEX_92A = /(?:^|\s)\d{3,}\s+(\d{3})\s+(G\d{2})\s+(\d{4})\s+(\d{1,2})\s+(\d{1,2})\s+([\d.,-]+)\s+(\d{4})\s+(\d{1,2})\s+(\d{1,2})\s+([\d.,-]+)\s+([\d.,-]+)\s+([\d.,-]+)\s+(\d{3})(?=\s|$)/g;
 
 // Pattern for 9.2 B — other investment income
 // Example: 991 G98 372 25.32 0.00 620
-const REGEX_92B = /(?:^|\s)\d{3}\s+(G\d{2})\s+(\d{3})\s+([\d.,-]+)\s+([\d.,-]+)\s+(\d{3})(?=\s|$)/g;
+const REGEX_92B = /(?:^|\s)\d{3,}\s+(G\d{2})\s+(\d{3})\s+([\d.,-]+)\s+([\d.,-]+)\s+(\d{3})(?=\s|$)/g;
 
 // Pattern for Anexo G Quadro 13 (CFDs / Derivative instruments)
 // Example: 13001   G51   A   -43.94   620
