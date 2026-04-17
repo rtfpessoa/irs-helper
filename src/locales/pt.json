@@ -27,7 +27,7 @@
       "disclaimer": "Verifique sempre manualmente se os valores gerados são corretos e estão nos campos certos do formulário IRS.\nEste é um projeto de código aberto com o objetivo de facilitar o preenchimento do IRS — não substitui aconselhamento contabilístico profissional."
     },
     "error": {
-      "no_rows": "Não foram encontradas linhas relevantes no(s) PDF(s) fornecido(s).",
+      "no_rows": "Não foram encontradas linhas relevantes no(s) ficheiro(s) fornecido(s).",
       "generic": "Ocorreu um erro durante o processamento.",
       "fallback": "Ocorreu um erro. Por favor, atualize a página."
     }
@@ -42,6 +42,11 @@
       "tr_no_rows": "Não foram encontrados dados de dividendos/juros em \"{{fileName}}\". Verifique que este é um Relatório de Impostos da Trade Republic.",
       "t212_wrong_file": "\"{{fileName}}\" não parece ser um Relatório Anual da Trading 212. Por favor, carregue o ficheiro correto.",
       "t212_no_rows": "Não foram encontrados dados de dividendos/juros em \"{{fileName}}\". Verifique que este é um Relatório Anual da Trading 212.",
+      "degiro_wrong_file": "\"{{fileName}}\" não parece ser uma exportação CSV de transações DEGIRO suportada.",
+      "degiro_no_rows": "Não foram encontradas linhas de mais-valias em \"{{fileName}}\". Verifique que este CSV DEGIRO inclui transações de venda.",
+      "degiro_incomplete_history": "\"{{fileName}}\" não inclui histórico de compras suficiente para corresponder a pelo menos uma venda DEGIRO.",
+      "degiro_unsupported_country": "\"{{fileName}}\" contém um país de ISIN não suportado para \"{{isin}}\".",
+      "degiro_unsupported_row": "\"{{fileName}}\" contém uma linha de transação DEGIRO não suportada ou inconsistente.",
       "file_too_large": "\"{{fileName}}\" é demasiado grande para ser processado com segurança. Forneça um PDF menor.",
       "too_many_pages": "\"{{fileName}}\" tem demasiadas páginas para ser processado com segurança."
     }
@@ -55,7 +60,7 @@
     "mode_enrich": "Carregar Ficheiro XML",
     "mode_tables": "Ver Tabelas IRS",
     "brokers_lane": "Relatórios das Corretoras",
-    "brokers_description": "Carregue os relatórios PDF das suas corretoras para extrair dados financeiros.",
+    "brokers_description": "Carregue relatórios ou exportações CSV das suas corretoras para extrair dados financeiros.",
     "xtb_lane": "XTB",
     "xtb_gains": "PDF de Mais-valias (Capital Gains)",
     "xtb_dividends": "PDF de Dividendos (Dividends and Interest)",
@@ -63,6 +68,8 @@
     "tr_report": "Relatório de Impostos",
     "t212_lane": "Trading 212",
     "t212_report": "Relatório Anual (Annual Statement)",
+    "degiro_lane": "DEGIRO",
+    "degiro_report": "CSV de Transações",
     "optional": "(Opcional)",
     "click_to_change": "Clique para alterar",
     "drag_drop": "Arraste e solte ou clique para navegar",
@@ -76,7 +83,11 @@
     "tr_warning_1": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Anexo J 9.2 A) são ignorados.",
     "tr_warning_2": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Anexo J 9.2 B) são ignorados.",
     "t212_warning_title": "Limitações de Leitura",
-    "t212_warning_1": "Mais-valias de vendas/posições fechadas (Anexo J 9.2A) ainda não são suportadas."
+    "t212_warning_1": "Mais-valias de vendas/posições fechadas (Anexo J 9.2A) ainda não são suportadas.",
+    "degiro_warning_title": "Limitações de Leitura",
+    "degiro_warning_1": "Apenas o formato português do CSV de transações DEGIRO é suportado.",
+    "degiro_warning_2": "No modo de enriquecimento XML, apenas são importadas vendas do ano da declaração.",
+    "degiro_warning_3": "O CSV tem de incluir o histórico completo de compras para cada venda importada."
   },
   "report": {
     "annex_g": "Anexo G",

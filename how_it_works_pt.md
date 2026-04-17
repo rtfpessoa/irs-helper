@@ -13,10 +13,10 @@ A aplicação funciona totalmente no seu computador. Nenhum ficheiro é enviado 
 6. Clique em "Gravar" e guarde o ficheiro XML no seu computador.
 7. Carregue esse ficheiro no IRS Helper. Este XML serve de base ao preenchimento automático e contém a estrutura e os campos obrigatórios exigidos pela Autoridade Tributária.
 
-## Passo 2: Carregar os relatórios PDF (mais-valias, dividendos e juros)
-1. Carregue todos os relatórios PDF relevantes das suas corretoras. Neste momento, são suportadas a XTB, a Trade Republic e a Trading 212 (alguns valores ainda não são importados, valide as limitações na página principal)
+## Passo 2: Carregar relatórios ou exportações CSV das corretoras
+1. Carregue todos os ficheiros relevantes das suas corretoras. Neste momento, são suportadas a XTB, a Trade Republic, a Trading 212 e a DEGIRO (alguns valores ainda não são importados, valide as limitações na página principal)
 2. Clique em "Gerar Ficheiro de Importação IRS".
-3. A aplicação analisa automaticamente os documentos e extrai tabelas estruturadas com as suas transações financeiras.
+3. A aplicação analisa automaticamente os ficheiros e extrai tabelas estruturadas com as suas transações financeiras.
 4. No fim, pode consultar um pequeno relatório e um comparador para confirmar as alterações feitas ao ficheiro XML.
 
 ## Passo 3: Rever, descarregar e importar o ficheiro

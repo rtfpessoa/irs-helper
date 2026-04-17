@@ -8,13 +8,14 @@ import { FileUploader } from './FileUploader';
 import { IrsTablesViewer } from './IrsTablesViewer';
 import { NO_ROWS_FOUND_ERROR, downloadXmlFile, processBrokerFiles, processTaxFiles } from '../utils/processFiles';
 import type { BrokerFilesResult } from '../utils/processFiles';
-import { PdfParsingError } from '../utils/pdfParser';
+import { BrokerParsingError } from '../utils/parserErrors';
 import type { EnrichmentResult } from '../types';
 
 type WorkflowMode = 'enrich' | 'tables';
 
 interface BrokerUploader {
   labelKey: string;
+  accept: string;
   file: File | null;
   setFile: (file: File | null) => void;
 }
@@ -39,6 +40,7 @@ export function HomePage() {
   const [xtbDividendsPdf, setXtbDividendsPdf] = useState<File | null>(null);
   const [tradeRepublicPdf, setTradeRepublicPdf] = useState<File | null>(null);
   const [trading212Pdf, setTrading212Pdf] = useState<File | null>(null);
+  const [degiroTransactionsCsv, setDegiroTransactionsCsv] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<EnrichmentResult | null>(null);
   const [tablesResult, setTablesResult] = useState<BrokerFilesResult | null>(null);
@@ -114,7 +116,7 @@ export function HomePage() {
     };
   }, [showDonationPrompt]);
 
-  const hasBrokerFile = xtbCapitalGainsPdf || xtbDividendsPdf || tradeRepublicPdf || trading212Pdf;
+  const hasBrokerFile = xtbCapitalGainsPdf || xtbDividendsPdf || tradeRepublicPdf || trading212Pdf || degiroTransactionsCsv;
 
   const brokerSections: BrokerSection[] = useMemo(
     () => [
@@ -132,11 +134,13 @@ export function HomePage() {
         uploaders: [
           {
             labelKey: 'uploader.xtb_gains',
+            accept: '.pdf',
             file: xtbCapitalGainsPdf,
             setFile: setXtbCapitalGainsPdf,
           },
           {
             labelKey: 'uploader.xtb_dividends',
+            accept: '.pdf',
             file: xtbDividendsPdf,
             setFile: setXtbDividendsPdf,
           },
@@ -151,6 +155,7 @@ export function HomePage() {
         uploaders: [
           {
             labelKey: 'uploader.tr_report',
+            accept: '.pdf',
             file: tradeRepublicPdf,
             setFile: setTradeRepublicPdf,
           },
@@ -165,13 +170,29 @@ export function HomePage() {
         uploaders: [
           {
             labelKey: 'uploader.t212_report',
+            accept: '.pdf',
             file: trading212Pdf,
             setFile: setTrading212Pdf,
           },
         ],
       },
+      {
+        badge: 'DEG',
+        badgeClass: 'broker-badge--degiro',
+        laneKey: 'uploader.degiro_lane',
+        warningTitleKey: 'uploader.degiro_warning_title',
+        warningKeys: ['uploader.degiro_warning_1', 'uploader.degiro_warning_2', 'uploader.degiro_warning_3'],
+        uploaders: [
+          {
+            labelKey: 'uploader.degiro_report',
+            accept: '.csv',
+            file: degiroTransactionsCsv,
+            setFile: setDegiroTransactionsCsv,
+          },
+        ],
+      },
     ],
-    [xtbCapitalGainsPdf, xtbDividendsPdf, tradeRepublicPdf, trading212Pdf],
+    [xtbCapitalGainsPdf, xtbDividendsPdf, tradeRepublicPdf, trading212Pdf, degiroTransactionsCsv],
   );
 
   const canProcess = workflowMode === 'enrich'
@@ -194,6 +215,7 @@ export function HomePage() {
           xtbDividendsPdf,
           tradeRepublicPdf,
           trading212Pdf,
+          degiroTransactionsCsv,
         });
         setResult(enrichmentResult);
       } else {
@@ -202,13 +224,14 @@ export function HomePage() {
           xtbDividendsPdf,
           tradeRepublicPdf,
           trading212Pdf,
+          degiroTransactionsCsv,
         });
         setTablesResult(brokerResult);
       }
     } catch (err: unknown) {
       console.error(err);
 
-      if (err instanceof PdfParsingError) {
+      if (err instanceof BrokerParsingError) {
         setError(t(err.i18nKey, err.i18nParams));
       } else if (err instanceof Error && err.message === NO_ROWS_FOUND_ERROR) {
         setError(t('app.error.no_rows'));
@@ -339,7 +362,7 @@ export function HomePage() {
                       <FileUploader
                         key={uploader.labelKey}
                         label={t(uploader.labelKey)}
-                        accept=".pdf"
+                        accept={uploader.accept}
                         onFileSelect={file => uploader.setFile(file)}
                         onRemove={() => uploader.setFile(null)}
                       />

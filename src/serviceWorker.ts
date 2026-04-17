@@ -124,11 +124,10 @@ self.addEventListener('fetch', (event: FetchEvent) => {
 
 // Type definitions
 interface ExtendedEvent extends Event {
-  waitUntil(promise: Promise<any>): void;
+  waitUntil(promise: Promise<unknown>): void;
 }
 
 interface FetchEvent extends Event {
   request: Request;
   respondWith(promise: Promise<Response>): void;
 }
-

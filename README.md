@@ -4,13 +4,13 @@ IRS Helper automates one of the most error-prone parts of filing Portuguese IRS:
 
 ## Business Goal
 
-Taxpayers who invest through platforms such as XTB and Trade Republic often need to manually transcribe values into IRS annex tables. That manual work is slow, repetitive, and easy to get wrong.
+Taxpayers who invest through platforms such as XTB, Trade Republic, Trading 212, and DEGIRO often need to manually transcribe values into IRS annex tables. That manual work is slow, repetitive, and easy to get wrong.
 
-IRS Helper reduces that effort by extracting data from broker PDFs and enriching the IRS XML file with the right table rows, while still allowing manual verification before submission.
+IRS Helper reduces that effort by extracting data from broker PDFs and CSV exports, then enriching the IRS XML file with the right table rows while still allowing manual verification before submission.
 
 ## What The Application Does
 
-1. Reads broker PDF reports and extracts supported transaction rows.
+1. Reads broker reports and CSV exports, then extracts supported transaction rows.
 2. Inserts those rows into the proper IRS XML annex sections.
 3. Generates a visual report of what was added.
 4. Shows a before/after XML diff so users can audit changes.
@@ -18,7 +18,7 @@ IRS Helper reduces that effort by extracting data from broker PDFs and enriching
 
 ## Supported Scope
 
-- Broker reports: XTB and Trade Republic
+- Broker reports: XTB, Trade Republic, Trading 212, and DEGIRO
 - IRS annexes and tables: Anexo J and Anexo G (supported subsets)
 - Languages: English and Portuguese
 
@@ -28,12 +28,12 @@ All processing is performed in the browser.
 
 - No user files are uploaded to external servers.
 - No backend is required for enrichment.
-- XML and PDF files remain on the user machine during processing.
+- XML, PDF, and CSV files remain on the user machine during processing.
 
 ## Typical Workflow
 
 1. Upload the base IRS XML declaration file.
-2. Upload one or more broker PDF reports.
+2. Upload one or more broker reports or CSV exports.
 3. Run enrichment.
 4. Review the enrichment summary and XML diff.
 5. Download the generated XML.

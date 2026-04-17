@@ -5,6 +5,8 @@ import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 import type { TaxRow, TaxRow92B, TaxRow8A, TaxRowG13, ParsedPdfData } from '../types';
+import { resolveCountryCode } from './brokerCountries';
+import { BrokerParsingError } from './parserErrors';
 
 const MAX_PDF_BYTES = 50 * 1024 * 1024;
 const MAX_PDF_PAGES = 200;
@@ -13,19 +15,7 @@ const MAX_PDF_PAGES = 200;
 // Custom error for parsing failures
 // ---------------------------------------------------------------------------
 
-export class PdfParsingError extends Error {
-  /** i18n key for the UI to use */
-  public readonly i18nKey: string;
-  /** Interpolation params for i18n */
-  public readonly i18nParams: Record<string, string>;
-
-  constructor(message: string, i18nKey: string, i18nParams: Record<string, string> = {}) {
-    super(message);
-    this.name = 'PdfParsingError';
-    this.i18nKey = i18nKey;
-    this.i18nParams = i18nParams;
-  }
-}
+export { BrokerParsingError as PdfParsingError };
 
 // ---------------------------------------------------------------------------
 // Internal: extract full text from a PDF file
@@ -37,7 +27,7 @@ function normalizeNumber(value: string): string {
 
 function validatePdfSize(file: File): void {
   if (file.size > MAX_PDF_BYTES) {
-    throw new PdfParsingError(
+    throw new BrokerParsingError(
       `"${file.name}" exceeds the maximum supported file size.`,
       'parser.error.file_too_large',
       { fileName: file.name }
@@ -60,7 +50,7 @@ async function extractPdfText(file: File): Promise<string[]> {
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
   if (pdf.numPages > MAX_PDF_PAGES) {
-    throw new PdfParsingError(
+    throw new BrokerParsingError(
       `"${file.name}" contains too many pages to be processed safely.`,
       'parser.error.too_many_pages',
       { fileName: file.name }
@@ -139,38 +129,7 @@ const T212_REPORT_MARKERS = [
 // Country name → IRS 3-digit code mapping (shared utility)
 // ---------------------------------------------------------------------------
 
-const COUNTRY_NAME_TO_CODE: Record<string, string> = {
-  'Germany': '276',
-  'Australia': '036',
-  'Austria': '040',
-  'Belgium': '056',
-  'Brazil': '076',
-  'Canada': '124',
-  'China': '156',
-  'Cyprus': '196',
-  'Denmark': '208',
-  'Spain': '724',
-  'United States': '840',
-  'USA': '840',
-  'US': '840',
-  'Finland': '246',
-  'France': '250',
-  'Ireland': '372',
-  'Italy': '380',
-  'Japan': '392',
-  'Luxembourg': '442',
-  'Norway': '578',
-  'Netherlands': '528',
-  'Portugal': '620',
-  'United Kingdom': '826',
-  'UK': '826',
-  'Sweden': '752',
-  'Switzerland': '756',
-};
-
-export function resolveCountryCode(name: string): string | undefined {
-  return COUNTRY_NAME_TO_CODE[name];
-}
+export { resolveCountryCode };
 
 // ---------------------------------------------------------------------------
 // Row extractors (pure functions, no file I/O)
@@ -267,7 +226,7 @@ export async function parseXtbCapitalGainsPdf(file: File): Promise<ParsedPdfData
   const looksLikeGains = matchesAnyMarker(fullText, XTB_GAINS_MARKERS);
 
   if (looksLikeDividends && !looksLikeGains) {
-    throw new PdfParsingError(
+    throw new BrokerParsingError(
       'The uploaded file appears to be an XTB Dividends PDF, but it was placed in the Capital Gains slot.',
       'parser.error.xtb_wrong_file_gains',
       { fileName: file.name }
@@ -280,7 +239,7 @@ export async function parseXtbCapitalGainsPdf(file: File): Promise<ParsedPdfData
 
   const totalRows = rows92A.length + rows92B.length + rowsG13.length;
   if (totalRows === 0) {
-    throw new PdfParsingError(
+    throw new BrokerParsingError(
       `No capital gains rows found in "${file.name}". Please verify this is an XTB Capital Gains report.`,
       'parser.error.xtb_no_gains_rows',
       { fileName: file.name }
@@ -309,7 +268,7 @@ export async function parseXtbDividendsPdf(file: File): Promise<ParsedPdfData> {
   const looksLikeDividends = matchesAnyMarker(fullText, XTB_DIVIDENDS_MARKERS);
 
   if (looksLikeGains && !looksLikeDividends) {
-    throw new PdfParsingError(
+    throw new BrokerParsingError(
       'The uploaded file appears to be an XTB Capital Gains PDF, but it was placed in the Dividends slot.',
       'parser.error.xtb_wrong_file_dividends',
       { fileName: file.name }
@@ -319,7 +278,7 @@ export async function parseXtbDividendsPdf(file: File): Promise<ParsedPdfData> {
   const rows8A = extractRows8A(pageTexts);
 
   if (rows8A.length === 0) {
-    throw new PdfParsingError(
+    throw new BrokerParsingError(
       `No dividend rows found in "${file.name}". Please verify this is an XTB Dividends report.`,
       'parser.error.xtb_no_dividends_rows',
       { fileName: file.name }
@@ -347,7 +306,7 @@ export async function parseTradeRepublicPdf(file: File): Promise<ParsedPdfData> 
   const looksLikeTR = matchesAnyMarker(fullText, TR_REPORT_MARKERS);
 
   if (!looksLikeTR) {
-    throw new PdfParsingError(
+    throw new BrokerParsingError(
       `"${file.name}" does not appear to be a Trade Republic Tax Report. Please upload the correct file.`,
       'parser.error.tr_wrong_file',
       { fileName: file.name }
@@ -357,7 +316,7 @@ export async function parseTradeRepublicPdf(file: File): Promise<ParsedPdfData> 
   const rows8A = extractRows8A(pageTexts);
 
   if (rows8A.length === 0) {
-    throw new PdfParsingError(
+    throw new BrokerParsingError(
       `No dividend/interest rows found in "${file.name}". Please verify this is a Trade Republic Tax Report with Quadro 8A data.`,
       'parser.error.tr_no_rows',
       { fileName: file.name }
@@ -403,7 +362,7 @@ export async function parseTrading212Pdf(file: File): Promise<ParsedPdfData> {
   const looksLikeT212 = matchesAnyMarker(fullText, T212_REPORT_MARKERS);
 
   if (!looksLikeT212) {
-    throw new PdfParsingError(
+    throw new BrokerParsingError(
       `"${file.name}" does not appear to be a Trading 212 Annual Statement. Please upload the correct file.`,
       'parser.error.t212_wrong_file',
       { fileName: file.name }
@@ -455,7 +414,7 @@ export async function parseTrading212Pdf(file: File): Promise<ParsedPdfData> {
   }
 
   if (rows8A.length === 0) {
-    throw new PdfParsingError(
+    throw new BrokerParsingError(
       `No dividend/interest data found in "${file.name}". Please verify this is a Trading 212 Annual Statement.`,
       'parser.error.t212_no_rows',
       { fileName: file.name }
