@@ -30,6 +30,7 @@ function getSourceTagClass(source: string) {
   if (s.includes('trade republic')) return 'enrichment-card__source-tag--trade-republic';
   if (s.includes('trading 212')) return 'enrichment-card__source-tag--t212';
   if (s.includes('activobank')) return 'enrichment-card__source-tag--activobank';
+  if (s.includes('degiro')) return 'enrichment-card__source-tag--degiro';
   return '';
 }
 
