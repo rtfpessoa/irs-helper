@@ -47,6 +47,11 @@
       "degiro_incomplete_history": "\"{{fileName}}\" não inclui histórico de compras suficiente para corresponder a pelo menos uma venda DEGIRO.",
       "degiro_unsupported_country": "\"{{fileName}}\" contém um país de ISIN não suportado para \"{{isin}}\".",
       "degiro_unsupported_row": "\"{{fileName}}\" contém uma linha de transação DEGIRO não suportada ou inconsistente.",
+      "etrade_wrong_file": "\"{{fileName}}\" não parece ser uma exportação de workbook de mais-valias E*TRADE suportada.",
+      "etrade_no_rows": "Não foram encontradas linhas `Sell` E*TRADE suportadas em \"{{fileName}}\".",
+      "etrade_unsupported_row": "\"{{fileName}}\" contém uma linha do workbook E*TRADE não suportada ou inconsistente ({{fieldName}}).",
+      "etrade_fx_download_failed": "Falhou a descarga das taxas de câmbio ECB USD/EUR ao processar \"{{fileName}}\".",
+      "etrade_missing_fx_rate": "\"{{fileName}}\" requer uma taxa ECB USD/EUR para {{date}} ou para o dia ECB publicado seguinte, mas não existia nenhuma taxa posterior disponível.",
       "file_too_large": "\"{{fileName}}\" é demasiado grande para ser processado com segurança. Forneça um PDF menor.",
       "too_many_pages": "\"{{fileName}}\" tem demasiadas páginas para ser processado com segurança."
     }
@@ -70,6 +75,8 @@
     "t212_report": "Relatório Anual (Annual Statement)",
     "degiro_lane": "DEGIRO",
     "degiro_report": "CSV de Transações",
+    "etrade_lane": "E*TRADE",
+    "etrade_report": "Workbook de Mais-valias (.xlsx)",
     "optional": "(Opcional)",
     "click_to_change": "Clique para alterar",
     "drag_drop": "Arraste e solte ou clique para navegar",
@@ -87,7 +94,11 @@
     "degiro_warning_title": "Limitações de Leitura",
     "degiro_warning_1": "Apenas o formato português do CSV de transações DEGIRO é suportado.",
     "degiro_warning_2": "No modo de enriquecimento XML, apenas são importadas vendas do ano da declaração.",
-    "degiro_warning_3": "O CSV tem de incluir o histórico completo de compras para cada venda importada."
+    "degiro_warning_3": "O CSV tem de incluir o histórico completo de compras para cada venda importada.",
+    "etrade_warning_title": "Limitações de Leitura",
+    "etrade_warning_1": "Apenas são suportados workbooks `.xlsx` de mais-valias E*TRADE com linhas `Sell`.",
+    "etrade_warning_2": "Os valores são convertidos de USD para EUR com taxas ECB USD/EUR do próprio dia quando disponíveis, caso contrário do dia ECB publicado seguinte, descarregadas em runtime e em cache no browser.",
+    "etrade_warning_3": "Todas as linhas E*TRADE importadas são tratadas como títulos dos EUA no Anexo J 9.2A."
   },
   "report": {
     "annex_g": "Anexo G",

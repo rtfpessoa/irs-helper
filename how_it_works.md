@@ -14,7 +14,7 @@ The application runs entirely on your computer. No files are sent to servers, so
 7. Upload that file to IRS Helper. This XML is used as the base for automatic filling and contains the structure and mandatory fields required by the Portuguese Tax Authority.
 
 ## Step 2: Upload broker reports or CSV exports
-1. Upload all relevant broker files. At the moment, XTB, Trade Republic, Trading 212, and DEGIRO are supported (some values are still not imported, so check the limitations on the main page).
+1. Upload all relevant broker files. At the moment, XTB, Trade Republic, Trading 212, DEGIRO, and E*TRADE are supported (some values are still not imported, so check the limitations on the main page).
 2. Click "Generate IRS Import File".
 3. The application automatically analyzes the files and extracts structured tables with your financial transactions.
 4. At the end, you can review a short report and a comparison view to confirm the changes made to the XML file.

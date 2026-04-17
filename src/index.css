@@ -495,6 +495,11 @@ body {
   color: #ffffff;
 }
 
+.broker-badge--etrade {
+  background: #7c2d12;
+  color: #ffffff;
+}
+
 [data-theme="light"] .broker-badge--tr {
   border-color: #000000;
 }
@@ -909,6 +914,12 @@ body {
   background: #2563eb;
   color: #ffffff;
   border-color: #1d4ed8;
+}
+
+.enrichment-card__source-tag--etrade {
+  background: #9a3412;
+  color: #ffffff;
+  border-color: #7c2d12;
 }
 
 .enrichment-report__annex-group {

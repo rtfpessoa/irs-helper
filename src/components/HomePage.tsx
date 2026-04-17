@@ -41,6 +41,7 @@ export function HomePage() {
   const [tradeRepublicPdf, setTradeRepublicPdf] = useState<File | null>(null);
   const [trading212Pdf, setTrading212Pdf] = useState<File | null>(null);
   const [degiroTransactionsCsv, setDegiroTransactionsCsv] = useState<File | null>(null);
+  const [etradeGainLossXlsx, setEtradeGainLossXlsx] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<EnrichmentResult | null>(null);
   const [tablesResult, setTablesResult] = useState<BrokerFilesResult | null>(null);
@@ -116,7 +117,8 @@ export function HomePage() {
     };
   }, [showDonationPrompt]);
 
-  const hasBrokerFile = xtbCapitalGainsPdf || xtbDividendsPdf || tradeRepublicPdf || trading212Pdf || degiroTransactionsCsv;
+  const hasBrokerFile =
+    xtbCapitalGainsPdf || xtbDividendsPdf || tradeRepublicPdf || trading212Pdf || degiroTransactionsCsv || etradeGainLossXlsx;
 
   const brokerSections: BrokerSection[] = useMemo(
     () => [
@@ -191,8 +193,23 @@ export function HomePage() {
           },
         ],
       },
+      {
+        badge: 'ET',
+        badgeClass: 'broker-badge--etrade',
+        laneKey: 'uploader.etrade_lane',
+        warningTitleKey: 'uploader.etrade_warning_title',
+        warningKeys: ['uploader.etrade_warning_1', 'uploader.etrade_warning_2', 'uploader.etrade_warning_3'],
+        uploaders: [
+          {
+            labelKey: 'uploader.etrade_report',
+            accept: '.xlsx',
+            file: etradeGainLossXlsx,
+            setFile: setEtradeGainLossXlsx,
+          },
+        ],
+      },
     ],
-    [xtbCapitalGainsPdf, xtbDividendsPdf, tradeRepublicPdf, trading212Pdf, degiroTransactionsCsv],
+    [xtbCapitalGainsPdf, xtbDividendsPdf, tradeRepublicPdf, trading212Pdf, degiroTransactionsCsv, etradeGainLossXlsx],
   );
 
   const canProcess = workflowMode === 'enrich'
@@ -216,6 +233,7 @@ export function HomePage() {
           tradeRepublicPdf,
           trading212Pdf,
           degiroTransactionsCsv,
+          etradeGainLossXlsx,
         });
         setResult(enrichmentResult);
       } else {
@@ -225,6 +243,7 @@ export function HomePage() {
           tradeRepublicPdf,
           trading212Pdf,
           degiroTransactionsCsv,
+          etradeGainLossXlsx,
         });
         setTablesResult(brokerResult);
       }

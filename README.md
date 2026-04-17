@@ -4,7 +4,7 @@ IRS Helper automates one of the most error-prone parts of filing Portuguese IRS:
 
 ## Business Goal
 
-Taxpayers who invest through platforms such as XTB, Trade Republic, Trading 212, and DEGIRO often need to manually transcribe values into IRS annex tables. That manual work is slow, repetitive, and easy to get wrong.
+Taxpayers who invest through platforms such as XTB, Trade Republic, Trading 212, DEGIRO, and E*TRADE often need to manually transcribe values into IRS annex tables. That manual work is slow, repetitive, and easy to get wrong.
 
 IRS Helper reduces that effort by extracting data from broker PDFs and CSV exports, then enriching the IRS XML file with the right table rows while still allowing manual verification before submission.
 
@@ -18,7 +18,7 @@ IRS Helper reduces that effort by extracting data from broker PDFs and CSV expor
 
 ## Supported Scope
 
-- Broker reports: XTB, Trade Republic, Trading 212, and DEGIRO
+- Broker reports: XTB, Trade Republic, Trading 212, DEGIRO, and E*TRADE
 - IRS annexes and tables: Anexo J and Anexo G (supported subsets)
 - Languages: English and Portuguese
 

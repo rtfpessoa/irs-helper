@@ -5,6 +5,7 @@ import {
   parseXtbDividendsPdf,
 } from './pdfParser';
 import { parseDegiroTransactionsCsv } from './degiroCsvParser';
+import { parseEtradeGainLossWorkbook } from './etradeXlsxParser';
 import { enrichXmlWithGains } from './xmlModifier';
 import type { BrokerName, EnrichmentResult, ParsedPdfData } from '../types';
 
@@ -17,6 +18,7 @@ export interface ProcessTaxFilesInput {
   tradeRepublicPdf?: File | null;
   trading212Pdf?: File | null;
   degiroTransactionsCsv?: File | null;
+  etradeGainLossXlsx?: File | null;
 }
 
 export interface ProcessBrokerFilesInput {
@@ -25,6 +27,7 @@ export interface ProcessBrokerFilesInput {
   tradeRepublicPdf?: File | null;
   trading212Pdf?: File | null;
   degiroTransactionsCsv?: File | null;
+  etradeGainLossXlsx?: File | null;
 }
 
 export interface BrokerFilesResult {
@@ -137,6 +140,11 @@ export async function processTaxFiles(input: ProcessTaxFilesInput): Promise<Enri
       parser: file => parseDegiroTransactionsCsv(file, { targetRealizationYear: degiroTargetRealizationYear }),
       brokerName: 'DEGIRO',
     },
+    {
+      file: input.etradeGainLossXlsx,
+      parser: file => parseEtradeGainLossWorkbook(file, { targetRealizationYear: degiroTargetRealizationYear }),
+      brokerName: 'E*TRADE',
+    },
   ];
 
   for (const parseJob of parseJobs) {
@@ -200,6 +208,11 @@ export async function processBrokerFiles(input: ProcessBrokerFilesInput): Promis
       file: input.degiroTransactionsCsv,
       parser: parseDegiroTransactionsCsv,
       brokerName: 'DEGIRO',
+    },
+    {
+      file: input.etradeGainLossXlsx,
+      parser: parseEtradeGainLossWorkbook,
+      brokerName: 'E*TRADE',
     },
   ];
 

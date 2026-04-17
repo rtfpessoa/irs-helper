@@ -25,6 +25,7 @@ function TableCard({ title, subtitle, rowsAdded, totals, sources, icon, colorCla
     if (s.includes('xtb')) return 'enrichment-card__source-tag--xtb';
     if (s.includes('trade republic')) return 'enrichment-card__source-tag--trade-republic';
     if (s.includes('trading 212')) return 'enrichment-card__source-tag--t212';
+    if (s.includes('e*trade') || s.includes('etrade')) return 'enrichment-card__source-tag--etrade';
     return '';
   };
 
@@ -150,4 +151,3 @@ export function EnrichmentReport({ summary }: EnrichmentReportProps) {
     </div>
   );
 }
-
