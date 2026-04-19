@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Activity, Landmark, Receipt, TrendingUp } from 'lucide-react';
-import type { ParsedPdfData, TaxRow, TaxRow8A, TaxRow92B, TaxRowG13 } from '../types';
+import type { ParsedPdfData, TaxRow, TaxRow8A, TaxRow92B, TaxRowG9, TaxRowG13 } from '../types';
 
 interface IrsTablesViewerProps {
   parsedData: ParsedPdfData;
@@ -8,6 +8,7 @@ interface IrsTablesViewerProps {
     table8A: string[];
     table92A: string[];
     table92B: string[];
+    tableG9: string[];
     tableG13: string[];
   };
 }
@@ -28,6 +29,7 @@ function getSourceTagClass(source: string) {
   if (s.includes('xtb')) return 'enrichment-card__source-tag--xtb';
   if (s.includes('trade republic')) return 'enrichment-card__source-tag--trade-republic';
   if (s.includes('trading 212')) return 'enrichment-card__source-tag--t212';
+  if (s.includes('activobank')) return 'enrichment-card__source-tag--activobank';
   return '';
 }
 
@@ -192,11 +194,41 @@ export function IrsTablesViewer({ parsedData, sources }: IrsTablesViewerProps) {
     ],
   };
 
-  const hasAnnexG = parsedData.rowsG13.length > 0;
+  const tableG9: TableConfig<TaxRowG9> = {
+    titleKey: 'report.quadro_g9.title',
+    subtitleKey: 'report.quadro_g9.subtitle',
+    icon: <TrendingUp size={20} />,
+    colorClass: 'enrichment-card--green',
+    rows: parsedData.rowsG9,
+    sources: sources.tableG9,
+    columns: [
+      { header: 'Nº Linha', accessor: (_, i) => String(9001 + i) },
+      { header: 'Titular', accessor: row => row.titular },
+      { header: 'NIF', accessor: row => row.nif },
+      { header: 'Cód. Encargos', accessor: row => row.codEncargos },
+      { header: 'Realização Ano', accessor: row => row.anoRealizacao },
+      { header: 'Realização Mês', accessor: row => row.mesRealizacao },
+      { header: 'Realização Dia', accessor: row => row.diaRealizacao },
+      { header: 'Realização Valor', accessor: row => row.valorRealizacao },
+      { header: 'Aquisição Ano', accessor: row => row.anoAquisicao },
+      { header: 'Aquisição Mês', accessor: row => row.mesAquisicao },
+      { header: 'Aquisição Dia', accessor: row => row.diaAquisicao },
+      { header: 'Aquisição Valor', accessor: row => row.valorAquisicao },
+      { header: 'Despesas e Encargos', accessor: row => row.despesasEncargos },
+      { header: 'País da Contraparte', accessor: row => row.paisContraparte },
+    ],
+    totals: [
+      { label: 'report.totals.realisation_value', value: formatCurrency(sumBy(parsedData.rowsG9, r => r.valorRealizacao)) },
+      { label: 'report.totals.acquisition_value', value: formatCurrency(sumBy(parsedData.rowsG9, r => r.valorAquisicao)) },
+      { label: 'report.totals.expenses_charges', value: formatCurrency(sumBy(parsedData.rowsG9, r => r.despesasEncargos)) },
+    ],
+  };
+
+  const hasAnnexG = parsedData.rowsG9.length > 0 || parsedData.rowsG13.length > 0;
   const hasAnnexJ = parsedData.rows8A.length > 0 || parsedData.rows92A.length > 0 || parsedData.rows92B.length > 0;
 
-  const totalRows = parsedData.rows8A.length + parsedData.rows92A.length + parsedData.rows92B.length + parsedData.rowsG13.length;
-  const activeTables = [parsedData.rows8A, parsedData.rows92A, parsedData.rows92B, parsedData.rowsG13].filter(r => r.length > 0).length;
+  const totalRows = parsedData.rows8A.length + parsedData.rows92A.length + parsedData.rows92B.length + parsedData.rowsG9.length + parsedData.rowsG13.length;
+  const activeTables = [parsedData.rows8A, parsedData.rows92A, parsedData.rows92B, parsedData.rowsG9, parsedData.rowsG13].filter(r => r.length > 0).length;
 
   return (
     <div className="enrichment-report">
@@ -214,6 +246,7 @@ export function IrsTablesViewer({ parsedData, sources }: IrsTablesViewerProps) {
           <header className="enrichment-report__annex-title">
             {t('report.annex_g')} <span>{t('report.capital_gains')}</span>
           </header>
+          <DataTable config={tableG9} />
           <DataTable config={tableG13} />
         </div>
       )}

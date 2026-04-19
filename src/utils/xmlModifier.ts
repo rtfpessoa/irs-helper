@@ -1,4 +1,4 @@
-import type { TaxRow, TaxRow92B, TaxRow8A, TaxRowG13, ParsedPdfData, EnrichmentResult, EnrichmentSummary } from '../types';
+import type { TaxRow, TaxRow92B, TaxRow8A, TaxRowG9, TaxRowG13, ParsedPdfData, EnrichmentResult, EnrichmentSummary } from '../types';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -8,6 +8,7 @@ function parseHighestNLinha(xml: string, blockName: string): number {
   let highest = 950;
   if (blockName === 'AnexoJq092BT01') highest = 990;
   if (blockName === 'AnexoJq08AT01') highest = 800; // 8.A starts at 801
+  if (blockName === 'AnexoGq09T01') highest = 9000; // G09 starts at 9001
   const re = /<NLinha>(\d+)<\/NLinha>/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(xml)) !== null) {
@@ -76,8 +77,9 @@ function validateXmlShape(xml: string, data: ParsedPdfData): void {
     throw new Error('Invalid XML: Anexo J is required for the selected broker reports.');
   }
 
-  if (data.rowsG13.length > 0 && !xml.includes('<AnexoG')) {
-    throw new Error('Invalid XML: Anexo G is required for CFD data.');
+  const needsAnexoG = data.rowsG9.length > 0 || data.rowsG13.length > 0;
+  if (needsAnexoG && !xml.includes('<AnexoG')) {
+    throw new Error('Invalid XML: Anexo G is required for the selected broker reports.');
   }
 }
 
@@ -171,20 +173,21 @@ function processBlock<T>(originalXml: string, config: InjectConfig<T>, searchSta
 export function enrichXmlWithGains(
   originalXml: string, 
   data: ParsedPdfData, 
-  sources: { table8A: string[], table92A: string[], table92B: string[], tableG13: string[] } = { table8A: [], table92A: [], table92B: [], tableG13: [] }
+  sources: { table8A: string[], table92A: string[], table92B: string[], tableG9: string[], tableG13: string[] } = { table8A: [], table92A: [], table92B: [], tableG9: [], tableG13: [] }
 ): EnrichmentResult {
-  const { rows8A, rows92A, rows92B, rowsG13 } = data;
+  const { rows8A, rows92A, rows92B, rowsG9, rowsG13 } = data;
   validateXmlShape(originalXml, data);
   
   const emptySummary: EnrichmentSummary = {
     table8A: { rowsAdded: 0, totals: [], sources: [] },
     table92A: { rowsAdded: 0, totals: [], sources: [] },
     table92B: { rowsAdded: 0, totals: [], sources: [] },
+    tableG9: { rowsAdded: 0, totals: [], sources: [] },
     tableG13: { rowsAdded: 0, totals: [], sources: [] },
     totalRowsAdded: 0,
   };
 
-  if (rows8A.length === 0 && rows92A.length === 0 && rows92B.length === 0 && rowsG13.length === 0) {
+  if (rows8A.length === 0 && rows92A.length === 0 && rows92B.length === 0 && rowsG9.length === 0 && rowsG13.length === 0) {
     return {
       originalXml,
       enrichedXml: originalXml,
@@ -291,14 +294,45 @@ export function enrichXmlWithGains(
   }
 
   // ---------------------------------------------------------------------------
-  // Anexo G enrichment (Quadro 13 – CFDs / Derivative instruments)
+  // Anexo G enrichment (Quadro 09 – Shares sold through PT entities)
   // ---------------------------------------------------------------------------
   const anexoGOpenIdx = xml.indexOf('<AnexoG');
-  if (anexoGOpenIdx !== -1 && rowsG13.length > 0) {
+  if (anexoGOpenIdx !== -1 && (rowsG9.length > 0 || rowsG13.length > 0)) {
     const anexoGCloseIdx = xml.indexOf('</AnexoG>', anexoGOpenIdx);
+    expandSelfClosing('Quadro09', anexoGOpenIdx, anexoGCloseIdx);
     expandSelfClosing('Quadro13', anexoGOpenIdx, anexoGCloseIdx);
 
-    xml = processBlock<TaxRowG13>(xml, {
+    if (rowsG9.length > 0) {
+      xml = processBlock<TaxRowG9>(xml, {
+        containerName: 'AnexoGq09T01',
+        quadroName: 'Quadro09',
+        rows: rowsG9,
+        buildFields: (row, nLinha) => [
+          ['NLinha', String(nLinha)],
+          ['Titular', row.titular],
+          ['NIF', row.nif],
+          ['CodEncargos', row.codEncargos],
+          ['AnoRealizacao', row.anoRealizacao],
+          ['MesRealizacao', row.mesRealizacao],
+          ['DiaRealizacao', row.diaRealizacao],
+          ['ValorRealizacao', row.valorRealizacao],
+          ['AnoAquisicao', row.anoAquisicao],
+          ['MesAquisicao', row.mesAquisicao],
+          ['DiaAquisicao', row.diaAquisicao],
+          ['ValorAquisicao', row.valorAquisicao],
+          ['DespesasEncargos', row.despesasEncargos],
+          ['PaisContraparte', row.paisContraparte],
+        ],
+        somaNodes: [
+          { tag: 'AnexoGq09T01SomaC01', fieldToSum: 'ValorRealizacao', computeNewSoma: rows => sumBy(rows, r => r.valorRealizacao) },
+          { tag: 'AnexoGq09T01SomaC02', fieldToSum: 'ValorAquisicao', computeNewSoma: rows => sumBy(rows, r => r.valorAquisicao) },
+          { tag: 'AnexoGq09T01SomaC03', fieldToSum: 'DespesasEncargos', computeNewSoma: rows => sumBy(rows, r => r.despesasEncargos) },
+        ],
+      }, anexoGOpenIdx);
+    }
+
+    if (rowsG13.length > 0) {
+      xml = processBlock<TaxRowG13>(xml, {
       containerName: 'AnexoGq13T01',
       quadroName: 'Quadro13',
       rows: rowsG13,
@@ -315,6 +349,7 @@ export function enrichXmlWithGains(
         { tag: 'AnexoGq13T01SomaC01', fieldToSum: 'RendimentoLiquido', computeNewSoma: rows => rows.reduce((acc, r) => acc + parseFloat(r.rendimentoLiquido), 0) },
       ]
     }, anexoGOpenIdx);
+    }
   }
 
   // Build summary
@@ -347,6 +382,15 @@ export function enrichXmlWithGains(
         { label: 'report.totals.tax_paid_abroad', value: fmt(sumBy(rows92B, r => r.impostoPagoNoEstrangeiro)), currency: true },
       ],
     },
+    tableG9: {
+      rowsAdded: rowsG9.length,
+      sources: sources.tableG9,
+      totals: rowsG9.length === 0 ? [] : [
+        { label: 'report.totals.realisation_value', value: fmt(sumBy(rowsG9, r => r.valorRealizacao)), currency: true },
+        { label: 'report.totals.acquisition_value', value: fmt(sumBy(rowsG9, r => r.valorAquisicao)), currency: true },
+        { label: 'report.totals.expenses_charges', value: fmt(sumBy(rowsG9, r => r.despesasEncargos)), currency: true },
+      ],
+    },
     tableG13: {
       rowsAdded: rowsG13.length,
       sources: sources.tableG13,
@@ -354,7 +398,7 @@ export function enrichXmlWithGains(
         { label: 'report.totals.net_income', value: fmt(sumBy(rowsG13, r => r.rendimentoLiquido)), currency: true },
       ],
     },
-    totalRowsAdded: rows8A.length + rows92A.length + rows92B.length + rowsG13.length,
+    totalRowsAdded: rows8A.length + rows92A.length + rows92B.length + rowsG9.length + rowsG13.length,
   };
 
   return { originalXml, enrichedXml: xml, summary };

@@ -39,6 +39,7 @@ export function HomePage() {
   const [xtbDividendsPdf, setXtbDividendsPdf] = useState<File | null>(null);
   const [tradeRepublicPdf, setTradeRepublicPdf] = useState<File | null>(null);
   const [trading212Pdf, setTrading212Pdf] = useState<File | null>(null);
+  const [activoBankPdf, setActivoBankPdf] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<EnrichmentResult | null>(null);
   const [tablesResult, setTablesResult] = useState<BrokerFilesResult | null>(null);
@@ -114,7 +115,7 @@ export function HomePage() {
     };
   }, [showDonationPrompt]);
 
-  const hasBrokerFile = xtbCapitalGainsPdf || xtbDividendsPdf || tradeRepublicPdf || trading212Pdf;
+  const hasBrokerFile = xtbCapitalGainsPdf || xtbDividendsPdf || tradeRepublicPdf || trading212Pdf || activoBankPdf;
 
   const brokerSections: BrokerSection[] = useMemo(
     () => [
@@ -170,8 +171,22 @@ export function HomePage() {
           },
         ],
       },
+      {
+        badge: 'AB',
+        badgeClass: 'broker-badge--activobank',
+        laneKey: 'uploader.activobank_lane',
+        warningTitleKey: 'uploader.activobank_warning_title',
+        warningKeys: ['uploader.activobank_warning_1'],
+        uploaders: [
+          {
+            labelKey: 'uploader.activobank_report',
+            file: activoBankPdf,
+            setFile: setActivoBankPdf,
+          },
+        ],
+      },
     ],
-    [xtbCapitalGainsPdf, xtbDividendsPdf, tradeRepublicPdf, trading212Pdf],
+    [xtbCapitalGainsPdf, xtbDividendsPdf, tradeRepublicPdf, trading212Pdf, activoBankPdf],
   );
 
   const canProcess = workflowMode === 'enrich'
@@ -194,6 +209,7 @@ export function HomePage() {
           xtbDividendsPdf,
           tradeRepublicPdf,
           trading212Pdf,
+          activoBankPdf,
         });
         setResult(enrichmentResult);
       } else {
@@ -202,6 +218,7 @@ export function HomePage() {
           xtbDividendsPdf,
           tradeRepublicPdf,
           trading212Pdf,
+          activoBankPdf,
         });
         setTablesResult(brokerResult);
       }
