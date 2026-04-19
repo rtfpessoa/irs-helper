@@ -1,5 +1,5 @@
 /** Broker labels used in enrichment summaries. */
-export type BrokerName = 'XTB' | 'Trade Republic' | 'Trading 212';
+export type BrokerName = 'XTB' | 'Trade Republic' | 'Trading 212' | 'ActivoBank';
 
 /** Common fields shared by IRS table rows that include country information. */
 export interface BaseTaxRow {
@@ -37,6 +37,23 @@ export interface TaxRow8A extends BaseTaxRow {
   impostoPago: string;
 }
 
+/** Anexo G - Quadro 9 row (shares sold through a Portuguese entity). */
+export interface TaxRowG9 {
+  titular: string;
+  nif: string;
+  codEncargos: string;
+  anoRealizacao: string;
+  mesRealizacao: string;
+  diaRealizacao: string;
+  valorRealizacao: string;
+  anoAquisicao: string;
+  mesAquisicao: string;
+  diaAquisicao: string;
+  valorAquisicao: string;
+  despesasEncargos: string;
+  paisContraparte: string;
+}
+
 /** Anexo G - Quadro 13 row (CFDs/derivatives). */
 export interface TaxRowG13 {
   codigoOperacao: string;
@@ -50,6 +67,7 @@ export interface ParsedPdfData {
   rows8A: TaxRow8A[];
   rows92A: TaxRow[];
   rows92B: TaxRow92B[];
+  rowsG9: TaxRowG9[];
   rowsG13: TaxRowG13[];
 }
 
@@ -66,6 +84,7 @@ export interface EnrichmentSummary {
   table8A: TableSummary;
   table92A: TableSummary;
   table92B: TableSummary;
+  tableG9: TableSummary;
   tableG13: TableSummary;
   /** Total rows across all tables */
   totalRowsAdded: number;

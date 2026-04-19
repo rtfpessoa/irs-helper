@@ -42,6 +42,8 @@
       "tr_no_rows": "Não foram encontrados dados de dividendos/juros em \"{{fileName}}\". Verifique que este é um Relatório de Impostos da Trade Republic.",
       "t212_wrong_file": "\"{{fileName}}\" não parece ser um Relatório Anual da Trading 212. Por favor, carregue o ficheiro correto.",
       "t212_no_rows": "Não foram encontrados dados de dividendos/juros em \"{{fileName}}\". Verifique que este é um Relatório Anual da Trading 212.",
+      "activobank_wrong_file": "\"{{fileName}}\" não parece ser um extrato do ActivoBank. Por favor, carregue o ficheiro correto.",
+      "activobank_no_rows": "Não foram encontrados dados de transações de ações em \"{{fileName}}\". Verifique que este é um extrato de mais-valias do ActivoBank.",
       "file_too_large": "\"{{fileName}}\" é demasiado grande para ser processado com segurança. Forneça um PDF menor.",
       "too_many_pages": "\"{{fileName}}\" tem demasiadas páginas para ser processado com segurança."
     }
@@ -76,7 +78,11 @@
     "tr_warning_1": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Anexo J 9.2 A) são ignorados.",
     "tr_warning_2": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Anexo J 9.2 B) são ignorados.",
     "t212_warning_title": "Limitações de Leitura",
-    "t212_warning_1": "Mais-valias de vendas/posições fechadas (Anexo J 9.2A) ainda não são suportadas."
+    "t212_warning_1": "Mais-valias de vendas/posições fechadas (Anexo J 9.2A) ainda não são suportadas.",
+    "activobank_lane": "ActivoBank",
+    "activobank_report": "PDF de Mais-valias (Alienação Onerosa)",
+    "activobank_warning_title": "Limitações de Leitura",
+    "activobank_warning_1": "Apenas linhas de \"Alienação Onerosa de Valores Mobiliários Estrangeiros — Ações\" são suportadas."
   },
   "report": {
     "annex_g": "Anexo G",
@@ -88,6 +94,10 @@
     "quadro_g13": {
       "title": "Quadro G13",
       "subtitle": "CFDs & Contratos de Opções"
+    },
+    "quadro_g9": {
+      "title": "Quadro G9",
+      "subtitle": "Ações — Vendas & Aquisições"
     },
     "quadro_8a": {
       "title": "Quadro 8A",

@@ -1,4 +1,5 @@
 import {
+  parseActivoBankPdf,
   parseTradeRepublicPdf,
   parseTrading212Pdf,
   parseXtbCapitalGainsPdf,
@@ -15,6 +16,7 @@ export interface ProcessTaxFilesInput {
   xtbDividendsPdf?: File | null;
   tradeRepublicPdf?: File | null;
   trading212Pdf?: File | null;
+  activoBankPdf?: File | null;
 }
 
 export interface ProcessBrokerFilesInput {
@@ -22,6 +24,7 @@ export interface ProcessBrokerFilesInput {
   xtbDividendsPdf?: File | null;
   tradeRepublicPdf?: File | null;
   trading212Pdf?: File | null;
+  activoBankPdf?: File | null;
 }
 
 export interface BrokerFilesResult {
@@ -30,6 +33,7 @@ export interface BrokerFilesResult {
     table8A: string[];
     table92A: string[];
     table92B: string[];
+    tableG9: string[];
     tableG13: string[];
   };
 }
@@ -44,6 +48,7 @@ interface AggregatedSources {
   table8A: Set<BrokerName>;
   table92A: Set<BrokerName>;
   table92B: Set<BrokerName>;
+  tableG9: Set<BrokerName>;
   tableG13: Set<BrokerName>;
 }
 
@@ -52,6 +57,7 @@ function emptyParsedData(): ParsedPdfData {
     rows8A: [],
     rows92A: [],
     rows92B: [],
+    rowsG9: [],
     rowsG13: [],
   };
 }
@@ -72,6 +78,11 @@ function mergeParsedData(target: ParsedPdfData, incoming: ParsedPdfData, brokerN
     sources.table92B.add(brokerName);
   }
 
+  if (incoming.rowsG9.length > 0) {
+    target.rowsG9.push(...incoming.rowsG9);
+    sources.tableG9.add(brokerName);
+  }
+
   if (incoming.rowsG13.length > 0) {
     target.rowsG13.push(...incoming.rowsG13);
     sources.tableG13.add(brokerName);
@@ -90,6 +101,7 @@ export async function processTaxFiles(input: ProcessTaxFilesInput): Promise<Enri
     table8A: new Set<BrokerName>(),
     table92A: new Set<BrokerName>(),
     table92B: new Set<BrokerName>(),
+    tableG9: new Set<BrokerName>(),
     tableG13: new Set<BrokerName>(),
   };
 
@@ -114,6 +126,11 @@ export async function processTaxFiles(input: ProcessTaxFilesInput): Promise<Enri
       parser: parseTrading212Pdf,
       brokerName: 'Trading 212',
     },
+    {
+      file: input.activoBankPdf,
+      parser: parseActivoBankPdf,
+      brokerName: 'ActivoBank',
+    },
   ];
 
   for (const parseJob of parseJobs) {
@@ -125,7 +142,7 @@ export async function processTaxFiles(input: ProcessTaxFilesInput): Promise<Enri
     mergeParsedData(parsedData, parsed, parseJob.brokerName, sources);
   }
 
-  const totalRows = parsedData.rows8A.length + parsedData.rows92A.length + parsedData.rows92B.length + parsedData.rowsG13.length;
+  const totalRows = parsedData.rows8A.length + parsedData.rows92A.length + parsedData.rows92B.length + parsedData.rowsG9.length + parsedData.rowsG13.length;
   if (totalRows === 0) {
     throw new Error(NO_ROWS_FOUND_ERROR);
   }
@@ -134,6 +151,7 @@ export async function processTaxFiles(input: ProcessTaxFilesInput): Promise<Enri
     table8A: [...sources.table8A],
     table92A: [...sources.table92A],
     table92B: [...sources.table92B],
+    tableG9: [...sources.tableG9],
     tableG13: [...sources.tableG13],
   });
 }
@@ -149,6 +167,7 @@ export async function processBrokerFiles(input: ProcessBrokerFilesInput): Promis
     table8A: new Set<BrokerName>(),
     table92A: new Set<BrokerName>(),
     table92B: new Set<BrokerName>(),
+    tableG9: new Set<BrokerName>(),
     tableG13: new Set<BrokerName>(),
   };
 
@@ -173,6 +192,11 @@ export async function processBrokerFiles(input: ProcessBrokerFilesInput): Promis
       parser: parseTrading212Pdf,
       brokerName: 'Trading 212',
     },
+    {
+      file: input.activoBankPdf,
+      parser: parseActivoBankPdf,
+      brokerName: 'ActivoBank',
+    },
   ];
 
   for (const parseJob of parseJobs) {
@@ -184,7 +208,7 @@ export async function processBrokerFiles(input: ProcessBrokerFilesInput): Promis
     mergeParsedData(parsedData, parsed, parseJob.brokerName, sources);
   }
 
-  const totalRows = parsedData.rows8A.length + parsedData.rows92A.length + parsedData.rows92B.length + parsedData.rowsG13.length;
+  const totalRows = parsedData.rows8A.length + parsedData.rows92A.length + parsedData.rows92B.length + parsedData.rowsG9.length + parsedData.rowsG13.length;
   if (totalRows === 0) {
     throw new Error(NO_ROWS_FOUND_ERROR);
   }
@@ -195,6 +219,7 @@ export async function processBrokerFiles(input: ProcessBrokerFilesInput): Promis
       table8A: [...sources.table8A],
       table92A: [...sources.table92A],
       table92B: [...sources.table92B],
+      tableG9: [...sources.tableG9],
       tableG13: [...sources.tableG13],
     },
   };

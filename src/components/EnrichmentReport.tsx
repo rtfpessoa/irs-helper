@@ -25,6 +25,7 @@ function TableCard({ title, subtitle, rowsAdded, totals, sources, icon, colorCla
     if (s.includes('xtb')) return 'enrichment-card__source-tag--xtb';
     if (s.includes('trade republic')) return 'enrichment-card__source-tag--trade-republic';
     if (s.includes('trading 212')) return 'enrichment-card__source-tag--t212';
+    if (s.includes('activobank')) return 'enrichment-card__source-tag--activobank';
     return '';
   };
 
@@ -63,9 +64,18 @@ function TableCard({ title, subtitle, rowsAdded, totals, sources, icon, colorCla
 
 export function EnrichmentReport({ summary }: EnrichmentReportProps) {
   const { t } = useTranslation();
-  const activeTablesCount = [summary.table8A, summary.table92A, summary.table92B, summary.tableG13].filter(t => t.rowsAdded > 0).length;
+  const activeTablesCount = [summary.table8A, summary.table92A, summary.table92B, summary.tableG9, summary.tableG13].filter(t => t.rowsAdded > 0).length;
 
   const annexGCards = [
+    {
+      title: t('report.quadro_g9.title'),
+      subtitle: t('report.quadro_g9.subtitle'),
+      rowsAdded: summary.tableG9.rowsAdded,
+      totals: summary.tableG9.totals,
+      sources: summary.tableG9.sources,
+      icon: <TrendingUp size={20} />,
+      colorClass: 'enrichment-card--green',
+    },
     {
       title: t('report.quadro_g13.title'),
       subtitle: t('report.quadro_g13.subtitle'),
@@ -107,7 +117,7 @@ export function EnrichmentReport({ summary }: EnrichmentReportProps) {
     },
   ];
   
-  const hasAnnexG = summary.tableG13.rowsAdded > 0;
+  const hasAnnexG = summary.tableG9.rowsAdded > 0 || summary.tableG13.rowsAdded > 0;
   const hasAnnexJ = [summary.table8A, summary.table92A, summary.table92B].some(t => t.rowsAdded > 0);
 
   return (

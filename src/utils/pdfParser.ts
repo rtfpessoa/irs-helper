@@ -4,7 +4,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-import type { TaxRow, TaxRow92B, TaxRow8A, TaxRowG13, ParsedPdfData } from '../types';
+import type { TaxRow, TaxRow92B, TaxRow8A, TaxRowG9, TaxRowG13, ParsedPdfData } from '../types';
 
 const MAX_PDF_BYTES = 50 * 1024 * 1024;
 const MAX_PDF_PAGES = 200;
@@ -133,6 +133,13 @@ const T212_REPORT_MARKERS = [
   /Trading\s*212/i,
   /Annual\s*Statement/i,
   /Trading\s*212\s*Markets/i,
+];
+
+/** Known markers for ActivoBank statements */
+const ACTIVOBANK_MARKERS = [
+  /ActivoBank/i,
+  /activobank\.pt/i,
+  /Aliena[çc][ãa]o\s*[Oo]nerosa\s*de\s*Valores\s*Mobili[áa]rios/i,
 ];
 
 // ---------------------------------------------------------------------------
@@ -291,6 +298,7 @@ export async function parseXtbCapitalGainsPdf(file: File): Promise<ParsedPdfData
     rows8A: [],
     rows92A,
     rows92B,
+    rowsG9: [],
     rowsG13,
   };
 }
@@ -330,6 +338,7 @@ export async function parseXtbDividendsPdf(file: File): Promise<ParsedPdfData> {
     rows8A,
     rows92A: [],
     rows92B: [],
+    rowsG9: [],
     rowsG13: [],
   };
 }
@@ -368,6 +377,7 @@ export async function parseTradeRepublicPdf(file: File): Promise<ParsedPdfData> 
     rows8A,
     rows92A: [],
     rows92B: [],
+    rowsG9: [],
     rowsG13: [],
   };
 }
@@ -466,6 +476,106 @@ export async function parseTrading212Pdf(file: File): Promise<ParsedPdfData> {
     rows8A,
     rows92A: [],
     rows92B: [],
+    rowsG9: [],
+    rowsG13: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// ActivoBank — Alienação Onerosa de Valores Mobiliários
+// ---------------------------------------------------------------------------
+
+/** ActivoBank NIF (tax identification number). */
+const ACTIVOBANK_NIF = '500734305';
+
+/**
+ * Regex for ActivoBank stock transaction rows.
+ * Matches lines like:
+ *   NIO INC - ADR 136 18 2024/03/28 81,49 2021/05/03 662,48 10,69
+ *   TESLA INC 840 1 2024/10/04 224,11 2023/07/20 245,31 0,27
+ *
+ * Groups:
+ *   1: Designação (stock name)
+ *   2: Código País (country code, 3 digits)
+ *   3: Quantidade (shares count)
+ *   4: Data Realização (sale date YYYY/MM/DD)
+ *   5: Valor Realização (sale value, comma decimal)
+ *   6: Data Aquisição (purchase date YYYY/MM/DD)
+ *   7: Valor Aquisição (purchase value, comma decimal)
+ *   8: Encargos (charges, comma decimal)
+ */
+const REGEX_ACTIVOBANK = /(.+?)\s+(\d{3})\s+(\d+)\s+(\d{4}\/\d{2}\/\d{2})\s+([\d.,]+)\s+(\d{4}\/\d{2}\/\d{2})\s+([\d.,]+)\s+([\d.,]+)/g;
+
+function parseActivoBankDate(dateStr: string): { year: string; month: string; day: string } {
+  const [year, month, day] = dateStr.split('/');
+  return {
+    year,
+    month: String(parseInt(month, 10)),
+    day: String(parseInt(day, 10)),
+  };
+}
+
+/**
+ * Parse an ActivoBank "Alienação Onerosa de Valores Mobiliários" PDF.
+ * Expected output: Anexo G Quadro 9 rows (shares sold through a PT entity).
+ * Throws a PdfParsingError if the file doesn't look like an ActivoBank statement.
+ */
+export async function parseActivoBankPdf(file: File): Promise<ParsedPdfData> {
+  const pageTexts = await extractPdfText(file);
+  const fullText = pageTexts.join(' ');
+
+  const looksLikeActivoBank = matchesAnyMarker(fullText, ACTIVOBANK_MARKERS);
+
+  if (!looksLikeActivoBank) {
+    throw new PdfParsingError(
+      `"${file.name}" does not appear to be an ActivoBank statement. Please upload the correct file.`,
+      'parser.error.activobank_wrong_file',
+      { fileName: file.name }
+    );
+  }
+
+  const rowsG9: TaxRowG9[] = [];
+
+  for (const text of pageTexts) {
+    const regex = new RegExp(REGEX_ACTIVOBANK.source, REGEX_ACTIVOBANK.flags);
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(text)) !== null) {
+      const countryCode = match[2];
+      const saleDate = parseActivoBankDate(match[4]);
+      const purchaseDate = parseActivoBankDate(match[6]);
+
+      rowsG9.push({
+        titular: 'A',
+        nif: ACTIVOBANK_NIF,
+        codEncargos: 'G01',
+        anoRealizacao: saleDate.year,
+        mesRealizacao: saleDate.month,
+        diaRealizacao: saleDate.day,
+        valorRealizacao: normalizeNumber(match[5]),
+        anoAquisicao: purchaseDate.year,
+        mesAquisicao: purchaseDate.month,
+        diaAquisicao: purchaseDate.day,
+        valorAquisicao: normalizeNumber(match[7]),
+        despesasEncargos: normalizeNumber(match[8]),
+        paisContraparte: countryCode,
+      });
+    }
+  }
+
+  if (rowsG9.length === 0) {
+    throw new PdfParsingError(
+      `No stock transaction rows found in "${file.name}". Please verify this is an ActivoBank capital gains statement.`,
+      'parser.error.activobank_no_rows',
+      { fileName: file.name }
+    );
+  }
+
+  return {
+    rows8A: [],
+    rows92A: [],
+    rows92B: [],
+    rowsG9,
     rowsG13: [],
   };
 }
