@@ -5,6 +5,7 @@ import {
   parseXtbCapitalGainsPdf,
   parseXtbDividendsPdf,
 } from './pdfParser';
+import { parseDegiroTransactionsCsv } from './degiroCsvParser';
 import { enrichXmlWithGains } from './xmlModifier';
 import type { BrokerName, EnrichmentResult, ParsedPdfData } from '../types';
 
@@ -17,6 +18,7 @@ export interface ProcessTaxFilesInput {
   tradeRepublicPdf?: File | null;
   trading212Pdf?: File | null;
   activoBankPdf?: File | null;
+  degiroTransactionsCsv?: File | null;
 }
 
 export interface ProcessBrokerFilesInput {
@@ -25,6 +27,7 @@ export interface ProcessBrokerFilesInput {
   tradeRepublicPdf?: File | null;
   trading212Pdf?: File | null;
   activoBankPdf?: File | null;
+  degiroTransactionsCsv?: File | null;
 }
 
 export interface BrokerFilesResult {
@@ -89,12 +92,27 @@ function mergeParsedData(target: ParsedPdfData, incoming: ParsedPdfData, brokerN
   }
 }
 
+function inferTargetRealizationYearFromXml(xmlText: string): string | undefined {
+  const match = xmlText.match(/<Modelo3IRSv(\d{4})\b/);
+  if (!match) {
+    return undefined;
+  }
+
+  const filingCampaignYear = Number.parseInt(match[1], 10);
+  if (!Number.isFinite(filingCampaignYear)) {
+    return undefined;
+  }
+
+  return String(filingCampaignYear - 1);
+}
+
 /**
  * Parses all uploaded broker files and enriches the provided IRS XML.
  * Throws `NO_ROWS_FOUND_ERROR` when no supported rows are extracted.
  */
 export async function processTaxFiles(input: ProcessTaxFilesInput): Promise<EnrichmentResult> {
   const originalXmlText = await input.xmlFile.text();
+  const degiroTargetRealizationYear = inferTargetRealizationYearFromXml(originalXmlText);
   const parsedData = emptyParsedData();
 
   const sources: AggregatedSources = {
@@ -130,6 +148,11 @@ export async function processTaxFiles(input: ProcessTaxFilesInput): Promise<Enri
       file: input.activoBankPdf,
       parser: parseActivoBankPdf,
       brokerName: 'ActivoBank',
+    },
+    {
+      file: input.degiroTransactionsCsv,
+      parser: file => parseDegiroTransactionsCsv(file, { targetRealizationYear: degiroTargetRealizationYear }),
+      brokerName: 'DEGIRO',
     },
   ];
 
@@ -196,6 +219,11 @@ export async function processBrokerFiles(input: ProcessBrokerFilesInput): Promis
       file: input.activoBankPdf,
       parser: parseActivoBankPdf,
       brokerName: 'ActivoBank',
+    },
+    {
+      file: input.degiroTransactionsCsv,
+      parser: parseDegiroTransactionsCsv,
+      brokerName: 'DEGIRO',
     },
   ];
 

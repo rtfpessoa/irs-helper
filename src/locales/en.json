@@ -27,7 +27,7 @@
       "disclaimer": "Always manually verify that the generated values are correct and placed in the right fields of the IRS form.\nThis is an open-source project aimed at making the IRS filing process easier — it is not a substitute for professional accounting advice."
     },
     "error": {
-      "no_rows": "No relevant rows found in the provided PDF(s).",
+      "no_rows": "No relevant rows found in the provided file(s).",
       "generic": "An error occurred during processing.",
       "fallback": "Something went wrong. Please refresh the page."
     }
@@ -44,6 +44,11 @@
       "t212_no_rows": "No dividend/interest data found in \"{{fileName}}\". Please verify this is a Trading 212 Annual Statement.",
       "activobank_wrong_file": "\"{{fileName}}\" does not appear to be an ActivoBank statement. Please upload the correct file.",
       "activobank_no_rows": "No stock transaction data found in \"{{fileName}}\". Please verify this is an ActivoBank capital gains statement.",
+      "degiro_wrong_file": "\"{{fileName}}\" does not appear to be a supported DEGIRO transactions CSV export.",
+      "degiro_no_rows": "No capital gains rows found in \"{{fileName}}\". Please verify this DEGIRO CSV includes sell transactions.",
+      "degiro_incomplete_history": "\"{{fileName}}\" is missing prior buy history required to match at least one DEGIRO sell transaction.",
+      "degiro_unsupported_country": "\"{{fileName}}\" contains an unsupported ISIN country for \"{{isin}}\".",
+      "degiro_unsupported_row": "\"{{fileName}}\" contains an unsupported or inconsistent DEGIRO transaction row.",
       "file_too_large": "\"{{fileName}}\" is too large to process safely. Please provide a smaller PDF.",
       "too_many_pages": "\"{{fileName}}\" has too many pages to process safely."
     }
@@ -57,7 +62,7 @@
     "mode_enrich": "Upload XML File",
     "mode_tables": "Show IRS Tables",
     "brokers_lane": "Broker Reports",
-    "brokers_description": "Upload PDF reports from your brokers to extract financial data.",
+    "brokers_description": "Upload broker reports or CSV exports to extract financial data.",
     "xtb_lane": "XTB",
     "xtb_gains": "Capital Gains PDF",
     "xtb_dividends": "Dividends and Interest PDF",
@@ -65,6 +70,8 @@
     "tr_report": "Tax Report PDF",
     "t212_lane": "Trading 212",
     "t212_report": "Annual Statement PDF",
+    "degiro_lane": "DEGIRO",
+    "degiro_report": "Transactions CSV",
     "optional": "(Optional)",
     "click_to_change": "Click to change",
     "drag_drop": "Drag & drop or click to browse",
@@ -82,7 +89,12 @@
     "activobank_lane": "ActivoBank",
     "activobank_report": "Capital Gains Statement PDF",
     "activobank_warning_title": "Parsing Limitations",
-    "activobank_warning_1": "Only \"Alienação Onerosa de Valores Mobiliários Estrangeiros — Ações\" rows are supported."
+    "activobank_warning_1": "Only \"Alienação Onerosa de Valores Mobiliários Estrangeiros — Ações\" rows are supported.",
+    "degiro_warning_title": "Parsing Limitations",
+    "degiro_warning_1": "Only the Portuguese DEGIRO transactions CSV format is supported.",
+    "degiro_warning_2": "In XML enrichment mode, only sell transactions from the declaration year are imported.",
+    "degiro_warning_3": "The CSV must include full buy history for each imported sell transaction.",
+    "degiro_warning_4": "Counterparty country is currently defaulted because the DEGIRO CSV does not provide the buyer's residence."
   },
   "report": {
     "annex_g": "Annex G",
