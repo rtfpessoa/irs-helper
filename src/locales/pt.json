@@ -93,7 +93,8 @@
     "degiro_warning_title": "Limitações de Leitura",
     "degiro_warning_1": "Apenas o formato português do CSV de transações DEGIRO é suportado.",
     "degiro_warning_2": "No modo de enriquecimento XML, apenas são importadas vendas do ano da declaração.",
-    "degiro_warning_3": "O CSV tem de incluir o histórico completo de compras para cada venda importada."
+    "degiro_warning_3": "O CSV tem de incluir o histórico completo de compras para cada venda importada.",
+    "degiro_warning_4": "O país da contraparte é atualmente preenchido por omissão porque o CSV DEGIRO não inclui a residência do comprador."
   },
   "report": {
     "annex_g": "Anexo G",

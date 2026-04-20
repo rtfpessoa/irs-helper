@@ -197,7 +197,7 @@ export function HomePage() {
         badgeClass: 'broker-badge--degiro',
         laneKey: 'uploader.degiro_lane',
         warningTitleKey: 'uploader.degiro_warning_title',
-        warningKeys: ['uploader.degiro_warning_1', 'uploader.degiro_warning_2', 'uploader.degiro_warning_3'],
+        warningKeys: ['uploader.degiro_warning_1', 'uploader.degiro_warning_2', 'uploader.degiro_warning_3', 'uploader.degiro_warning_4'],
         uploaders: [
           {
             labelKey: 'uploader.degiro_report',

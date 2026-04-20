@@ -93,7 +93,8 @@
     "degiro_warning_title": "Parsing Limitations",
     "degiro_warning_1": "Only the Portuguese DEGIRO transactions CSV format is supported.",
     "degiro_warning_2": "In XML enrichment mode, only sell transactions from the declaration year are imported.",
-    "degiro_warning_3": "The CSV must include full buy history for each imported sell transaction."
+    "degiro_warning_3": "The CSV must include full buy history for each imported sell transaction.",
+    "degiro_warning_4": "Counterparty country is currently defaulted because the DEGIRO CSV does not provide the buyer's residence."
   },
   "report": {
     "annex_g": "Annex G",

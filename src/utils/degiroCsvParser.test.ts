@@ -52,6 +52,51 @@ describe('parseDegiroTransactionsCsv', () => {
     expect(data.rows92A[1].despesasEncargos).toBe('1.50');
   });
 
+  it('preserves totals exactly when a sell is split across three FIFO lots', async () => {
+    const csv = `Data,Hora,Produto,ISIN,Bolsa de referência,Bolsa,Quantidade,Preços,,Valor local,,Valor EUR,Taxa de Câmbio,Taxa Autofx,Custos de transação e/ou taxas de terceiros,Total EUR,ID da Ordem,
+01-01-2020,10:00,ETF,IE00B3XXRP09,EAM,XAMS,1,"10,0000",EUR,"-10,00",EUR,"-10,00",,"0,00",,"-10,00",,buy-1
+01-02-2020,10:00,ETF,IE00B3XXRP09,EAM,XAMS,1,"20,0000",EUR,"-20,00",EUR,"-20,00",,"0,00",,"-20,00",,buy-2
+01-03-2020,10:00,ETF,IE00B3XXRP09,EAM,XAMS,1,"30,0000",EUR,"-30,00",EUR,"-30,00",,"0,00",,"-30,00",,buy-3
+01-04-2020,10:00,ETF,IE00B3XXRP09,EAM,XAMS,-3,"33,3333",EUR,"100,00",EUR,"100,00",,"0,00","-1,00","99,00",,sell-1
+`;
+
+    const fakeFile = new File([csv], 'degiro.csv', { type: 'text/csv' });
+    const data = await parseDegiroTransactionsCsv(fakeFile);
+
+    expect(data.rows92A).toHaveLength(3);
+    expect(data.rows92A.map(row => row.valorRealizacao)).toEqual(['33.33', '33.33', '33.34']);
+    expect(data.rows92A.map(row => row.despesasEncargos)).toEqual(['0.33', '0.33', '0.34']);
+    expect(data.rows92A.reduce((total, row) => total + Number(row.valorRealizacao), 0).toFixed(2)).toBe('100.00');
+    expect(data.rows92A.reduce((total, row) => total + Number(row.valorAquisicao), 0).toFixed(2)).toBe('60.00');
+    expect(data.rows92A.reduce((total, row) => total + Number(row.despesasEncargos), 0).toFixed(2)).toBe('1.00');
+  });
+
+  it('includes AutoFX fees in despesasEncargos', async () => {
+    const csv = `Data,Hora,Produto,ISIN,Bolsa de referência,Bolsa,Quantidade,Preços,,Valor local,,Valor EUR,Taxa de Câmbio,Taxa Autofx,Custos de transação e/ou taxas de terceiros,Total EUR,ID da Ordem,
+01-01-2020,10:00,ETF,IE00B3XXRP09,EAM,XAMS,1,"10,0000",EUR,"-10,00",EUR,"-10,00",,"-0,30",,"-10,30",,buy-1
+01-02-2020,10:00,ETF,IE00B3XXRP09,EAM,XAMS,-1,"15,0000",EUR,"15,00",EUR,"15,00",,"-0,20","-0,50","14,30",,sell-1
+`;
+
+    const fakeFile = new File([csv], 'degiro.csv', { type: 'text/csv' });
+    const data = await parseDegiroTransactionsCsv(fakeFile);
+
+    expect(data.rows92A).toHaveLength(1);
+    expect(data.rows92A[0].despesasEncargos).toBe('1.00');
+  });
+
+  it('preserves fee refunds as negative adjustments to despesasEncargos', async () => {
+    const csv = `Data,Hora,Produto,ISIN,Bolsa de referência,Bolsa,Quantidade,Preços,,Valor local,,Valor EUR,Taxa de Câmbio,Taxa Autofx,Custos de transação e/ou taxas de terceiros,Total EUR,ID da Ordem,
+01-01-2020,10:00,ETF,IE00B3XXRP09,EAM,XAMS,1,"10,0000",EUR,"-10,00",EUR,"-10,00",,"0,00","-0,50","-10,50",,buy-1
+01-02-2020,10:00,ETF,IE00B3XXRP09,EAM,XAMS,-1,"15,0000",EUR,"15,00",EUR,"15,00",,"0,00","0,25","15,25",,sell-1
+`;
+
+    const fakeFile = new File([csv], 'degiro.csv', { type: 'text/csv' });
+    const data = await parseDegiroTransactionsCsv(fakeFile);
+
+    expect(data.rows92A).toHaveLength(1);
+    expect(data.rows92A[0].despesasEncargos).toBe('0.25');
+  });
+
   it('filters generated rows to the requested realization year while keeping prior-year buys for FIFO', async () => {
     const csv = `Data,Hora,Produto,ISIN,Bolsa de referência,Bolsa,Quantidade,Preços,,Valor local,,Valor EUR,Taxa de Câmbio,Taxa Autofx,Custos de transação e/ou taxas de terceiros,Total EUR,ID da Ordem,
 15-12-2022,10:00,ETF,IE00B3XXRP09,EAM,XAMS,1,"50,0000",EUR,"-50,00",EUR,"-50,00",,"0,00","-0,50","-50,50",,buy-1
@@ -98,6 +143,81 @@ describe('parseDegiroTransactionsCsv', () => {
     expect(data.rows92A[0].anoAquisicao).toBe('2023');
   });
 
+  it('returns no rows when target-year filtering leaves a valid DEGIRO CSV with no matching sells', async () => {
+    const csv = `Data,Hora,Produto,ISIN,Bolsa de referência,Bolsa,Quantidade,Preços,,Valor local,,Valor EUR,Taxa de Câmbio,Taxa Autofx,Custos de transação e/ou taxas de terceiros,Total EUR,ID da Ordem,
+15-12-2022,10:00,ETF,IE00B3XXRP09,EAM,XAMS,1,"50,0000",EUR,"-50,00",EUR,"-50,00",,"0,00","-0,50","-50,50",,buy-1
+15-01-2023,10:00,ETF,IE00B3XXRP09,EAM,XAMS,-1,"75,0000",EUR,"75,00",EUR,"75,00",,"0,00","-1,00","74,00",,sell-1
+`;
+
+    const fakeFile = new File([csv], 'degiro.csv', { type: 'text/csv' });
+    const data = await parseDegiroTransactionsCsv(fakeFile, { targetRealizationYear: '2024' });
+
+    expect(data.rows8A).toEqual([]);
+    expect(data.rows92A).toEqual([]);
+    expect(data.rows92B).toEqual([]);
+    expect(data.rowsG13).toEqual([]);
+  });
+
+  it('classifies fund-like products as G20', async () => {
+    const csv = `Data,Hora,Produto,ISIN,Bolsa de referência,Bolsa,Quantidade,Preços,,Valor local,,Valor EUR,Taxa de Câmbio,Taxa Autofx,Custos de transação e/ou taxas de terceiros,Total EUR,ID da Ordem,
+01-01-2020,10:00,VANGUARD UCITS ETF,IE00B3XXRP09,EAM,XAMS,1,"10,0000",EUR,"-10,00",EUR,"-10,00",,"0,00",,"-10,00",,buy-1
+01-02-2020,10:00,VANGUARD UCITS ETF,IE00B3XXRP09,EAM,XAMS,-1,"15,0000",EUR,"15,00",EUR,"15,00",,"0,00","-1,00","14,00",,sell-1
+`;
+
+    const fakeFile = new File([csv], 'degiro.csv', { type: 'text/csv' });
+    const data = await parseDegiroTransactionsCsv(fakeFile);
+
+    expect(data.rows92A[0].codigo).toBe('G20');
+  });
+
+  it('classifies equity products as G01', async () => {
+    const csv = `Data,Hora,Produto,ISIN,Bolsa de referência,Bolsa,Quantidade,Preços,,Valor local,,Valor EUR,Taxa de Câmbio,Taxa Autofx,Custos de transação e/ou taxas de terceiros,Total EUR,ID da Ordem,
+01-01-2020,10:00,ACME COMMON STOCK,US0000000001,EAM,XAMS,1,"10,0000",EUR,"-10,00",EUR,"-10,00",,"0,00",,"-10,00",,buy-1
+01-02-2020,10:00,ACME COMMON STOCK,US0000000001,EAM,XAMS,-1,"15,0000",EUR,"15,00",EUR,"15,00",,"0,00","-1,00","14,00",,sell-1
+`;
+
+    const fakeFile = new File([csv], 'degiro.csv', { type: 'text/csv' });
+    const data = await parseDegiroTransactionsCsv(fakeFile);
+
+    expect(data.rows92A[0].codigo).toBe('G01');
+  });
+
+  it('classifies bond products as G10', async () => {
+    const csv = `Data,Hora,Produto,ISIN,Bolsa de referência,Bolsa,Quantidade,Preços,,Valor local,,Valor EUR,Taxa de Câmbio,Taxa Autofx,Custos de transação e/ou taxas de terceiros,Total EUR,ID da Ordem,
+01-01-2020,10:00,CORP BOND 2030,US0000000001,EAM,XAMS,1,"10,0000",EUR,"-10,00",EUR,"-10,00",,"0,00",,"-10,00",,buy-1
+01-02-2020,10:00,CORP BOND 2030,US0000000001,EAM,XAMS,-1,"15,0000",EUR,"15,00",EUR,"15,00",,"0,00","-1,00","14,00",,sell-1
+`;
+
+    const fakeFile = new File([csv], 'degiro.csv', { type: 'text/csv' });
+    const data = await parseDegiroTransactionsCsv(fakeFile);
+
+    expect(data.rows92A[0].codigo).toBe('G10');
+  });
+
+  it('fails on ambiguous products that cannot be classified confidently', async () => {
+    const csv = `Data,Hora,Produto,ISIN,Bolsa de referência,Bolsa,Quantidade,Preços,,Valor local,,Valor EUR,Taxa de Câmbio,Taxa Autofx,Custos de transação e/ou taxas de terceiros,Total EUR,ID da Ordem,
+01-01-2020,10:00,GLOBAL INCOME SECURITY,US0000000001,EAM,XAMS,1,"10,0000",EUR,"-10,00",EUR,"-10,00",,"0,00",,"-10,00",,buy-1
+01-02-2020,10:00,GLOBAL INCOME SECURITY,US0000000001,EAM,XAMS,-1,"15,0000",EUR,"15,00",EUR,"15,00",,"0,00","-1,00","14,00",,sell-1
+`;
+
+    const fakeFile = new File([csv], 'degiro.csv', { type: 'text/csv' });
+    await expect(parseDegiroTransactionsCsv(fakeFile)).rejects.toMatchObject({
+      i18nKey: 'parser.error.degiro_unsupported_row',
+    });
+  });
+
+  it('fails on derivative-like products', async () => {
+    const csv = `Data,Hora,Produto,ISIN,Bolsa de referência,Bolsa,Quantidade,Preços,,Valor local,,Valor EUR,Taxa de Câmbio,Taxa Autofx,Custos de transação e/ou taxas de terceiros,Total EUR,ID da Ordem,
+01-01-2020,10:00,INDEX CFD,US0000000001,EAM,XAMS,1,"10,0000",EUR,"-10,00",EUR,"-10,00",,"0,00",,"-10,00",,buy-1
+01-02-2020,10:00,INDEX CFD,US0000000001,EAM,XAMS,-1,"15,0000",EUR,"15,00",EUR,"15,00",,"0,00","-1,00","14,00",,sell-1
+`;
+
+    const fakeFile = new File([csv], 'degiro.csv', { type: 'text/csv' });
+    await expect(parseDegiroTransactionsCsv(fakeFile)).rejects.toMatchObject({
+      i18nKey: 'parser.error.degiro_unsupported_row',
+    });
+  });
+
   it('fails when a sell cannot be matched to prior buys', async () => {
     const csv = `Data,Hora,Produto,ISIN,Bolsa de referência,Bolsa,Quantidade,Preços,,Valor local,,Valor EUR,Taxa de Câmbio,Taxa Autofx,Custos de transação e/ou taxas de terceiros,Total EUR,ID da Ordem,
 01-03-2020,10:00,ETF,IE00B3XXRP09,EAM,XAMS,-1,"30,0000",EUR,"30,00",EUR,"30,00",,"0,00","-1,00","29,00",,sell-1
@@ -107,6 +227,39 @@ describe('parseDegiroTransactionsCsv', () => {
     await expect(parseDegiroTransactionsCsv(fakeFile)).rejects.toThrow(BrokerParsingError);
     await expect(parseDegiroTransactionsCsv(fakeFile)).rejects.toMatchObject({
       i18nKey: 'parser.error.degiro_incomplete_history',
+    });
+  });
+
+  it('fails when Valor EUR is blank', async () => {
+    const csv = `Data,Hora,Produto,ISIN,Bolsa de referência,Bolsa,Quantidade,Preços,,Valor local,,Valor EUR,Taxa de Câmbio,Taxa Autofx,Custos de transação e/ou taxas de terceiros,Total EUR,ID da Ordem,
+01-01-2020,10:00,ETF,IE00B3XXRP09,EAM,XAMS,-1,"30,0000",EUR,"30,00",EUR,,,"0,00","-1,00","29,00",,sell-1
+`;
+
+    const fakeFile = new File([csv], 'degiro.csv', { type: 'text/csv' });
+    await expect(parseDegiroTransactionsCsv(fakeFile)).rejects.toMatchObject({
+      i18nKey: 'parser.error.degiro_unsupported_row',
+    });
+  });
+
+  it('fails on invalid dates', async () => {
+    const csv = `Data,Hora,Produto,ISIN,Bolsa de referência,Bolsa,Quantidade,Preços,,Valor local,,Valor EUR,Taxa de Câmbio,Taxa Autofx,Custos de transação e/ou taxas de terceiros,Total EUR,ID da Ordem,
+32-01-2020,10:00,ETF,IE00B3XXRP09,EAM,XAMS,-1,"30,0000",EUR,"30,00",EUR,"30,00",,"0,00","-1,00","29,00",,sell-1
+`;
+
+    const fakeFile = new File([csv], 'degiro.csv', { type: 'text/csv' });
+    await expect(parseDegiroTransactionsCsv(fakeFile)).rejects.toMatchObject({
+      i18nKey: 'parser.error.degiro_unsupported_row',
+    });
+  });
+
+  it('fails on invalid times', async () => {
+    const csv = `Data,Hora,Produto,ISIN,Bolsa de referência,Bolsa,Quantidade,Preços,,Valor local,,Valor EUR,Taxa de Câmbio,Taxa Autofx,Custos de transação e/ou taxas de terceiros,Total EUR,ID da Ordem,
+01-01-2020,99:99,ETF,IE00B3XXRP09,EAM,XAMS,-1,"30,0000",EUR,"30,00",EUR,"30,00",,"0,00","-1,00","29,00",,sell-1
+`;
+
+    const fakeFile = new File([csv], 'degiro.csv', { type: 'text/csv' });
+    await expect(parseDegiroTransactionsCsv(fakeFile)).rejects.toMatchObject({
+      i18nKey: 'parser.error.degiro_unsupported_row',
     });
   });
 

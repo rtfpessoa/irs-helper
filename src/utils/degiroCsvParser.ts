@@ -31,7 +31,7 @@ interface CsvTradeRow {
   quantity: number;
   price: number;
   valueEur: number;
-  feeEur: number;
+  costEur: number;
   orderId: string;
   sourceIndex: number;
 }
@@ -39,11 +39,12 @@ interface CsvTradeRow {
 interface TradeEvent {
   date: string;
   time: string;
+  product: string;
   isin: string;
   quantity: number;
   price: number;
   valueEur: number;
-  feeEur: number;
+  costEur: number;
   sourceIndex: number;
 }
 
@@ -51,7 +52,7 @@ interface OpenLot {
   acquisitionDate: string;
   remainingQuantity: number;
   unitGrossEur: number;
-  unitFeeEur: number;
+  unitCostEur: number;
 }
 
 interface ParseDegiroTransactionsCsvOptions {
@@ -60,10 +61,23 @@ interface ParseDegiroTransactionsCsvOptions {
 
 interface ConsumedSellEvent {
   matchedQuantity: number;
-  rows92A: TaxRow[];
+  matches: MatchedLot[];
+}
+
+interface MatchedLot {
+  acquisitionDate: string;
+  matchedQuantity: number;
+  unitGrossEur: number;
+  unitCostEur: number;
 }
 
 const QUANTITY_EPSILON = 0.000001;
+const DATE_REGEX = /^(\d{2})-(\d{2})-(\d{4})$/;
+const TIME_REGEX = /^(\d{2}):(\d{2})$/;
+const FUND_KEYWORDS = ['ETF', 'UCITS', 'FUND', 'SICAV', 'OEIC'];
+const BOND_KEYWORDS = ['BOND', 'NOTE', 'DEBT', 'OBLIGA', 'OBRIGACAO'];
+const EQUITY_KEYWORDS = ['SHARE', 'SHARES', 'STOCK', 'ORD', 'ORDINARY', 'COMMON', 'ADR', 'ADS'];
+const UNSUPPORTED_PRODUCT_KEYWORDS = ['CFD', 'OPTION', 'FUTURE', 'WARRANT', 'TURBO', 'CERTIFICATE', 'SWAP'];
 
 function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
@@ -130,6 +144,22 @@ function normalizeDecimal(value: string): number {
   return Number.isFinite(parsed) ? parsed : Number.NaN;
 }
 
+function parseRequiredDecimal(value: string | undefined): number {
+  if (!value || value.trim() === '') {
+    return Number.NaN;
+  }
+
+  return normalizeDecimal(value);
+}
+
+function parseOptionalDecimal(value: string | undefined): number {
+  if (!value || value.trim() === '') {
+    return 0;
+  }
+
+  return normalizeDecimal(value);
+}
+
 function formatMoney(value: number): string {
   return value.toFixed(2);
 }
@@ -139,9 +169,94 @@ function formatDatePart(value: string): string {
 }
 
 function buildTimestamp(date: string, time: string): number {
-  const [day, month, year] = date.split('-').map(part => Number.parseInt(part, 10));
-  const [hour, minute] = time.split(':').map(part => Number.parseInt(part, 10));
+  const [, dayPart, monthPart, yearPart] = date.match(DATE_REGEX) ?? [];
+  const [, hourPart, minutePart] = time.match(TIME_REGEX) ?? [];
+  const day = Number.parseInt(dayPart, 10);
+  const month = Number.parseInt(monthPart, 10);
+  const year = Number.parseInt(yearPart, 10);
+  const hour = Number.parseInt(hourPart, 10);
+  const minute = Number.parseInt(minutePart, 10);
   return Date.UTC(year, month - 1, day, hour, minute);
+}
+
+function isValidDate(date: string): boolean {
+  const match = date.match(DATE_REGEX);
+  if (!match) {
+    return false;
+  }
+
+  const [, dayPart, monthPart, yearPart] = match;
+  const day = Number.parseInt(dayPart, 10);
+  const month = Number.parseInt(monthPart, 10);
+  const year = Number.parseInt(yearPart, 10);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+
+  return parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day;
+}
+
+function isValidTime(time: string): boolean {
+  const match = time.match(TIME_REGEX);
+  if (!match) {
+    return false;
+  }
+
+  const [, hourPart, minutePart] = match;
+  const hour = Number.parseInt(hourPart, 10);
+  const minute = Number.parseInt(minutePart, 10);
+  return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
+}
+
+function normalizeProduct(product: string): string {
+  return product
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+}
+
+function matchesProductKeyword(product: string, keyword: string): boolean {
+  const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^A-Z0-9])${escapedKeyword}([^A-Z0-9]|$)`).test(product);
+}
+
+function classifyDegiroProductCode(product: string): string {
+  const normalizedProduct = normalizeProduct(product);
+
+  if (UNSUPPORTED_PRODUCT_KEYWORDS.some(keyword => matchesProductKeyword(normalizedProduct, keyword))) {
+    throw new Error('unsupported');
+  }
+
+  if (FUND_KEYWORDS.some(keyword => matchesProductKeyword(normalizedProduct, keyword))) {
+    return 'G20';
+  }
+
+  if (BOND_KEYWORDS.some(keyword => matchesProductKeyword(normalizedProduct, keyword))) {
+    return 'G10';
+  }
+
+  if (EQUITY_KEYWORDS.some(keyword => matchesProductKeyword(normalizedProduct, keyword))) {
+    return 'G01';
+  }
+
+  throw new Error('ambiguous');
+}
+
+function roundMoney(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function roundPartsPreservingTotal(values: number[]): number[] {
+  if (values.length === 0) {
+    return [];
+  }
+
+  let remainingTotal = values.reduce((total, value) => total + value, 0);
+  return values.map((value, index) => {
+    const roundedValue = index === values.length - 1 ? roundMoney(remainingTotal) : roundMoney(value);
+    remainingTotal -= roundedValue;
+    return roundedValue;
+  });
 }
 
 function validateHeaders(headers: string[], fileName: string): void {
@@ -165,22 +280,30 @@ function validateHeaders(headers: string[], fileName: string): void {
 
 function parseTradeRows(fileName: string, rows: string[][]): CsvTradeRow[] {
   return rows.map((row, index) => {
-    const quantity = normalizeDecimal(row[6] ?? '');
-    const price = normalizeDecimal(row[7] ?? '');
-    const valueEur = normalizeDecimal(row[11] ?? '');
-    const feeEur = normalizeDecimal(row[14] ?? '');
+    const date = (row[0] ?? '').trim();
+    const time = (row[1] ?? '').trim();
+    const isin = (row[3] ?? '').trim();
+    const quantity = parseRequiredDecimal(row[6] ?? '');
+    const price = parseRequiredDecimal(row[7] ?? '');
+    const valueEur = parseRequiredDecimal(row[11] ?? '');
+    const autoFxEur = parseOptionalDecimal(row[13] ?? '');
+    const brokerFeeEur = parseOptionalDecimal(row[14] ?? '');
     const orderId = (row[17] || row[16] || '').trim();
+    const costEur = autoFxEur + brokerFeeEur;
 
     if (
-      !row[0] ||
-      !row[1] ||
-      !row[3] ||
+      !date ||
+      !time ||
+      !isin ||
       quantity === 0 ||
       !orderId ||
+      !isValidDate(date) ||
+      !isValidTime(time) ||
       !Number.isFinite(quantity) ||
       !Number.isFinite(price) ||
       !Number.isFinite(valueEur) ||
-      !Number.isFinite(feeEur)
+      !Number.isFinite(autoFxEur) ||
+      !Number.isFinite(brokerFeeEur)
     ) {
       throw new BrokerParsingError(
         `Unsupported DEGIRO transaction row found in "${fileName}".`,
@@ -190,14 +313,14 @@ function parseTradeRows(fileName: string, rows: string[][]): CsvTradeRow[] {
     }
 
     return {
-      date: row[0].trim(),
-      time: row[1].trim(),
+      date,
+      time,
       product: (row[2] ?? '').trim(),
-      isin: row[3].trim(),
+      isin,
       quantity,
       price,
       valueEur,
-      feeEur,
+      costEur,
       orderId,
       sourceIndex: index,
     };
@@ -232,11 +355,12 @@ function consolidateTradeEvents(fileName: string, rows: CsvTradeRow[]): TradeEve
     return {
       date: first.date,
       time: first.time,
+      product: first.product,
       isin: first.isin,
       quantity: first.quantity,
       price: first.price,
       valueEur: Math.abs(first.valueEur),
-      feeEur: group.reduce((total, row) => total + Math.abs(row.feeEur), 0),
+      costEur: group.reduce((total, row) => total + row.costEur, 0),
       sourceIndex: Math.min(...group.map(row => row.sourceIndex)),
     };
   }).sort((left, right) => {
@@ -250,33 +374,31 @@ function consolidateTradeEvents(fileName: string, rows: CsvTradeRow[]): TradeEve
 
 function buildTaxRow(
   countryCode: string,
+  operationCode: string,
   sellEvent: TradeEvent,
   acquisitionDate: string,
-  matchedQuantity: number,
-  sellQuantity: number,
-  lot: OpenLot,
+  roundedRealizationValue: number,
+  roundedAcquisitionValue: number,
+  roundedExpenseValue: number,
 ): TaxRow {
   const [sellDay, sellMonth, sellYear] = sellEvent.date.split('-');
   const [buyDay, buyMonth, buyYear] = acquisitionDate.split('-');
 
-  const proportionalSellValue = (sellEvent.valueEur / sellQuantity) * matchedQuantity;
-  const proportionalSellFee = (sellEvent.feeEur / sellQuantity) * matchedQuantity;
-  const acquisitionValue = lot.unitGrossEur * matchedQuantity;
-  const acquisitionFee = lot.unitFeeEur * matchedQuantity;
-
   return {
     codPais: countryCode,
-    codigo: 'G20',
+    codigo: operationCode,
     anoRealizacao: sellYear,
     mesRealizacao: formatDatePart(sellMonth),
     diaRealizacao: formatDatePart(sellDay),
-    valorRealizacao: formatMoney(proportionalSellValue),
+    valorRealizacao: formatMoney(roundedRealizationValue),
     anoAquisicao: buyYear,
     mesAquisicao: formatDatePart(buyMonth),
     diaAquisicao: formatDatePart(buyDay),
-    valorAquisicao: formatMoney(acquisitionValue),
-    despesasEncargos: formatMoney(acquisitionFee + proportionalSellFee),
+    valorAquisicao: formatMoney(roundedAcquisitionValue),
+    despesasEncargos: formatMoney(roundedExpenseValue),
     impostoPagoNoEstrangeiro: '0.00',
+    // DEGIRO's transactions CSV does not expose the counterparty residence,
+    // so this legacy default is preserved and surfaced as a UI limitation.
     codPaisContraparte: '620',
   };
 }
@@ -286,13 +408,11 @@ function getEventYear(event: TradeEvent): string {
 }
 
 function consumeSellEventLots(
-  countryCode: string,
   event: TradeEvent,
   lots: OpenLot[],
-  emitRows: boolean,
 ): ConsumedSellEvent {
   let remainingSellQuantity = Math.abs(event.quantity);
-  const consumedRows: TaxRow[] = [];
+  const matches: MatchedLot[] = [];
 
   while (remainingSellQuantity > QUANTITY_EPSILON) {
     const openLot = lots[0];
@@ -301,9 +421,12 @@ function consumeSellEventLots(
     }
 
     const matchedQuantity = Math.min(remainingSellQuantity, openLot.remainingQuantity);
-    if (emitRows) {
-      consumedRows.push(buildTaxRow(countryCode, event, openLot.acquisitionDate, matchedQuantity, Math.abs(event.quantity), openLot));
-    }
+    matches.push({
+      acquisitionDate: openLot.acquisitionDate,
+      matchedQuantity,
+      unitGrossEur: openLot.unitGrossEur,
+      unitCostEur: openLot.unitCostEur,
+    });
 
     openLot.remainingQuantity -= matchedQuantity;
     remainingSellQuantity -= matchedQuantity;
@@ -315,8 +438,32 @@ function consumeSellEventLots(
 
   return {
     matchedQuantity: Math.abs(event.quantity) - remainingSellQuantity,
-    rows92A: consumedRows,
+    matches,
   };
+}
+
+function buildTaxRows(countryCode: string, operationCode: string, sellEvent: TradeEvent, matches: MatchedLot[]): TaxRow[] {
+  const sellQuantity = Math.abs(sellEvent.quantity);
+  const realizationValues = matches.map(match => (sellEvent.valueEur / sellQuantity) * match.matchedQuantity);
+  const acquisitionValues = matches.map(match => match.unitGrossEur * match.matchedQuantity);
+  const expenseValues = matches.map(match => -(
+    (sellEvent.costEur / sellQuantity) * match.matchedQuantity +
+    match.unitCostEur * match.matchedQuantity
+  ));
+
+  const roundedRealizationValues = roundPartsPreservingTotal(realizationValues);
+  const roundedAcquisitionValues = roundPartsPreservingTotal(acquisitionValues);
+  const roundedExpenseValues = roundPartsPreservingTotal(expenseValues);
+
+  return matches.map((match, index) => buildTaxRow(
+    countryCode,
+    operationCode,
+    sellEvent,
+    match.acquisitionDate,
+    roundedRealizationValues[index],
+    roundedAcquisitionValues[index],
+    roundedExpenseValues[index],
+  ));
 }
 
 export async function parseDegiroTransactionsCsv(
@@ -359,7 +506,7 @@ export async function parseDegiroTransactionsCsv(
         acquisitionDate: event.date,
         remainingQuantity: event.quantity,
         unitGrossEur: event.valueEur / event.quantity,
-        unitFeeEur: event.feeEur / event.quantity,
+        unitCostEur: event.costEur / event.quantity,
       });
       openLots.set(event.isin, lots);
       continue;
@@ -375,7 +522,20 @@ export async function parseDegiroTransactionsCsv(
       );
     }
 
-    const consumedSellEvent = consumeSellEventLots(countryCode, event, lots, shouldEmitRows);
+    let operationCode = '';
+    if (shouldEmitRows) {
+      try {
+        operationCode = classifyDegiroProductCode(event.product);
+      } catch {
+        throw new BrokerParsingError(
+          `Unsupported DEGIRO transaction row found in "${file.name}".`,
+          'parser.error.degiro_unsupported_row',
+          { fileName: file.name }
+        );
+      }
+    }
+
+    const consumedSellEvent = consumeSellEventLots(event, lots);
     openLots.set(event.isin, lots);
 
     if (consumedSellEvent.matchedQuantity + QUANTITY_EPSILON < sellQuantity) {
@@ -390,10 +550,21 @@ export async function parseDegiroTransactionsCsv(
       continue;
     }
 
-    rows92A.push(...consumedSellEvent.rows92A);
+    if (shouldEmitRows) {
+      rows92A.push(...buildTaxRows(countryCode, operationCode, event, consumedSellEvent.matches));
+    }
   }
 
   if (rows92A.length === 0) {
+    if (targetRealizationYear) {
+      return {
+        rows8A: [],
+        rows92A: [],
+        rows92B: [],
+        rowsG13: [],
+      };
+    }
+
     throw new BrokerParsingError(
       `No capital gains rows found in "${file.name}". Please verify this is a DEGIRO transactions CSV with sell trades.`,
       'parser.error.degiro_no_rows',
