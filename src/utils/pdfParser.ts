@@ -173,6 +173,7 @@ const COUNTRY_NAME_TO_CODE: Record<string, string> = {
   'UK': '826',
   'Sweden': '752',
   'Switzerland': '756',
+  'Poland': '616',
 };
 
 export function resolveCountryCode(name: string): string | undefined {
@@ -612,9 +613,16 @@ const ISIN_PREFIX_TO_COUNTRY_CODE: Record<string, string> = {
   LU: '442',
   NL: '528',
   NO: '578',
+  PL: '616',
   PT: '620',
   SE: '752',
   US: '840',
+  KY: '136',
+  VG: '092',
+  BM: '060',
+  MH: '584',
+  JE: '832',
+  IL: '376',
 };
 
 /**
@@ -850,5 +858,475 @@ export async function parseFreedom24Pdf(file: File): Promise<ParsedPdfData> {
     rows92B: [],
     rowsG9: [],
     rowsG13: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// IBKR — Activity Statement
+// ---------------------------------------------------------------------------
+
+/** Known markers that ALL must appear in an IBKR Activity Statement PDF. */
+const IBKR_MARKERS = [
+  'Activity Statement',
+  'Mark-to-Market Performance Summary',
+  'Realized & Unrealized Performance Summary',
+];
+
+/**
+ * Two-letter WHT country codes used in IBKR Withholding Tax descriptions.
+ * Maps to IRS 3-digit country codes.
+ */
+const WHT_COUNTRY_CODE: Record<string, string> = {
+  US: '840',
+  IT: '380',
+  FR: '250',
+  DE: '276',
+  BR: '076',
+  JP: '392',
+  SE: '752',
+  PL: '616',
+  GB: '826',
+  CA: '124',
+  CH: '756',
+};
+
+/** Strip IBKR comma thousands-separators before parseFloat. */
+function parseIbkrNumber(s: string): number {
+  return parseFloat(s.replace(/,/g, ''));
+}
+
+/**
+ * Extracts a sub-string of `text` starting at the first occurrence of `start`
+ * and ending before the first occurrence of any string in `ends` (after `start`).
+ * Search is case-insensitive and leading/trailing whitespace in markers is ignored.
+ * Returns '' when `start` is not found.
+ */
+function extractIbkrSection(text: string, start: string, ends: string[]): string {
+  const lowerText = text.toLowerCase();
+  const needle = start.trim().toLowerCase();
+  const startIdx = lowerText.indexOf(needle);
+  if (startIdx === -1) return '';
+
+  let endIdx = text.length;
+  for (const end of ends) {
+    const endNeedle = end.trim().toLowerCase();
+    const idx = lowerText.indexOf(endNeedle, startIdx + needle.length);
+    if (idx !== -1 && idx < endIdx) endIdx = idx;
+  }
+
+  return text.slice(startIdx, endIdx);
+}
+
+/**
+ * Extracts a sub-string of `text` starting at the first match of `startPattern`
+ * and ending before the first occurrence of any string in `ends` (after the match).
+ * Returns '' when `startPattern` does not match.
+ */
+function findIbkrSectionByRegex(text: string, startPattern: RegExp, ends: string[]): string {
+  const startMatch = startPattern.exec(text);
+  if (!startMatch) return '';
+  const startIdx = startMatch.index;
+
+  const lowerText = text.toLowerCase();
+  let endIdx = text.length;
+  for (const end of ends) {
+    const endNeedle = end.trim().toLowerCase();
+    const idx = lowerText.indexOf(endNeedle, startIdx + startMatch[0].length);
+    if (idx !== -1 && idx < endIdx) endIdx = idx;
+  }
+
+  return text.slice(startIdx, endIdx);
+}
+
+/** Internal: one buy lot for FIFO matching in IBKR stock trades. */
+interface IbkrBuyLot {
+  date: string;
+  remainingQty: number;
+}
+
+/** Internal: one sell trade record from an IBKR statement. */
+interface IbkrSellTrade {
+  symbol: string;
+  date: string;
+  qty: number;
+  proceeds: number;
+  commFee: number;
+  basis: number;
+}
+
+/** Internal: one dividend entry from an IBKR statement. */
+interface IbkrDividend {
+  date: string;
+  ticker: string;
+  isin: string;
+  amount: number;
+}
+
+/** Internal: one withholding-tax entry from an IBKR statement. */
+interface IbkrWhtEntry {
+  date: string;
+  ticker: string;
+  isin: string;
+  countryCode: string;
+  amount: number;
+}
+
+/**
+ * FIFO matching for IBKR stock sell trades.
+ * Builds `TaxRow` entries using the Basis/Proceeds already provided by IBKR per sell row.
+ * Only the acquisition DATE is resolved through FIFO (values are proportioned to matched qty).
+ * Sells whose opening buy is not present in this document are silently skipped.
+ */
+function buildIbkrRows92A(
+  buyPool: Record<string, IbkrBuyLot[]>,
+  sellTrades: IbkrSellTrade[],
+  instrumentMap: Map<string, string>,
+): TaxRow[] {
+  const rows: TaxRow[] = [];
+
+  for (const sell of sellTrades) {
+    const pool = buyPool[sell.symbol] ?? [];
+    let remainingSellQty = sell.qty;
+
+    while (remainingSellQty > 0 && pool.length > 0) {
+      const buyEntry = pool[0];
+      if (buyEntry.remainingQty <= 0) {
+        pool.shift();
+        continue;
+      }
+
+      const matchedQty = Math.min(buyEntry.remainingQty, remainingSellQty);
+      const proportion = matchedQty / sell.qty;
+
+      const valorRealizacao = Math.abs(sell.proceeds) * proportion;
+      const valorAquisicao = Math.abs(sell.basis) * proportion;
+      const despesasEncargos = Math.abs(sell.commFee) * proportion;
+
+      const sellParts = sell.date.split('-');
+      const buyParts = buyEntry.date.split('-');
+      const isin = instrumentMap.get(sell.symbol) ?? '';
+      const countryCode = isinToCountryCode(isin);
+
+      rows.push({
+        codPais: countryCode,
+        codigo: 'G20',
+        anoRealizacao: sellParts[0],
+        mesRealizacao: String(parseInt(sellParts[1], 10)),
+        diaRealizacao: String(parseInt(sellParts[2], 10)),
+        valorRealizacao: valorRealizacao.toFixed(2),
+        anoAquisicao: buyParts[0],
+        mesAquisicao: String(parseInt(buyParts[1], 10)),
+        diaAquisicao: String(parseInt(buyParts[2], 10)),
+        valorAquisicao: valorAquisicao.toFixed(2),
+        despesasEncargos: despesasEncargos.toFixed(2),
+        impostoPagoNoEstrangeiro: '0.00',
+        codPaisContraparte: countryCode,
+      });
+
+      buyEntry.remainingQty -= matchedQty;
+      remainingSellQty -= matchedQty;
+      if (buyEntry.remainingQty <= 0) pool.shift();
+    }
+    // Remaining qty with no matching buy = prior period; skip silently.
+  }
+
+  return rows;
+}
+
+/**
+ * Parse an IBKR Activity Statement PDF.
+ * Extracts:
+ *   - Stock sell trades (FIFO matched) → Quadro 9.2A (G20)
+ *   - Dividends with WHT → Quadro 8A (E11, country from WHT or ISIN prefix)
+ *   - Credit/SYEP interest → Quadro 8A (E21, Ireland 372)
+ *   - Options realized P/L → Quadro G13 (G51, US 840)
+ *   - CFD realized P/L → Quadro G13 (G51, Ireland 372)
+ *
+ * Known limitations:
+ *   - Non-EUR trade amounts are reported in their original currency; manual EUR conversion required.
+ *   - ADR dividends with no WHT fall back to the ISIN prefix country (typically US/840).
+ *   - Sells whose opening buy is from a prior period are skipped.
+ *
+ * Throws a PdfParsingError if the file doesn't look like an IBKR Activity Statement.
+ */
+export async function parseIbkrPdf(file: File): Promise<ParsedPdfData> {
+  const pageTexts = await extractPdfText(file);
+  const fullText = pageTexts.join(' ');
+
+  // --- Validate fingerprint ---
+  const allMarkersPresent = IBKR_MARKERS.every(m => fullText.includes(m));
+  if (!allMarkersPresent) {
+    throw new PdfParsingError(
+      `"${file.name}" does not appear to be an IBKR Activity Statement.`,
+      'parser.error.ibkr_wrongFile',
+      { fileName: file.name },
+    );
+  }
+
+  console.log('[IBKR] fullText length:', fullText.length);
+  console.log('[IBKR] fullText sample (chars 0-500):', fullText.substring(0, 500));
+
+  // ---------------------------------------------------------------------------
+  // Step A: Build instrument map  (ticker → ISIN)
+  // In the "Financial Instrument Information" section each row is:
+  //   Symbol  Description  Conid  SecurityID  Underlying  ListingExch  Mult  Type  Code
+  // After pdf.js joins items with spaces the ISIN appears mid-row.
+  // We scan backward from each ISIN to find the ticker (first token of its row).
+  // ---------------------------------------------------------------------------
+  const fiiSection = extractIbkrSection(fullText, 'Financial Instrument Information', ['Trades', 'Dividends', 'Open Positions', 'Net Asset Value']);
+  // Strip the FII column header row so the first data token is a ticker symbol.
+  const fiiHeaderEnd = /\bCode\s+/i.exec(fiiSection);
+  const fiiData = fiiHeaderEnd ? fiiSection.slice(fiiHeaderEnd.index + fiiHeaderEnd[0].length) : fiiSection;
+
+  const instrumentMap = new Map<string, string>();
+  const isinPattern = /([A-Z]{2}[A-Z0-9]{9}\d)/g;
+  let fiiMatch: RegExpExecArray | null;
+  while ((fiiMatch = isinPattern.exec(fiiData)) !== null) {
+    const isin = fiiMatch[1];
+    const chunk = fiiData.substring(Math.max(0, fiiMatch.index - 300), fiiMatch.index).trim();
+    // Split by row-terminating TYPE keywords to isolate the current row's start
+    const afterLastType = chunk.split(/\b(?:COMMON|ADR|ETF|REIT|FUND|PREFERRED|BOND|NOTE|RIGHT|WARRANT)\b/i).pop() ?? chunk;
+    const tickerMatch = afterLastType.trim().match(/^([A-Z0-9][A-Z0-9.]{0,10})\b/);
+    if (tickerMatch && !/^\d+$/.test(tickerMatch[1])) {
+      if (!instrumentMap.has(tickerMatch[1])) {
+        instrumentMap.set(tickerMatch[1], isin);
+      }
+    }
+  }
+
+  console.log('[IBKR] fiiSection length:', fiiSection.length, 'sample:', fiiSection.substring(0, 200));
+  console.log('[IBKR] instrumentMap size:', instrumentMap.size);
+
+  // ---------------------------------------------------------------------------
+  // Step B: Extract stock trades → rows92A (FIFO buy/sell matching)
+  // Scope to the Stocks subsection of Trades to avoid option/CFD symbols.
+  // ---------------------------------------------------------------------------
+  const tradesSection = findIbkrSectionByRegex(
+    fullText,
+    /Trades\s+Symbol\s+Date\/Time/i,
+    ['Corporate Actions']
+  );
+  const stocksText = extractIbkrSection(tradesSection, 'Stocks', ['Equity and Index Options', 'CFDs', 'Forex']);
+  console.log('[IBKR] tradesSection length:', tradesSection.length);
+  console.log('[IBKR] stocksSection length:', stocksText.length);
+
+  // Trade row format: SYMBOL  DATE, TIME  QTY  T.PRICE  C.PRICE  PROCEEDS  COMM/FEE  BASIS  REALIZED_PL  MTM_PL  CODE
+  const tradeRowRegex = /\b([A-Z0-9][A-Z0-9.]{0,15})\s+(\d{4}-\d{2}-\d{2}),\s*\d{2}:\d{2}:\d{2}\s+([-\d,.]+)\s+[\d,.]+\s+[\d,.]+\s+([-\d,.]+)\s+([-\d,.]+)\s+([-\d,.]+)\s+[-\d,.]+\s+[-\d,.]+\s+(\S+)/g;
+
+  const buyPool: Record<string, IbkrBuyLot[]> = {};
+  const sellTrades: IbkrSellTrade[] = [];
+
+  let tradeMatch: RegExpExecArray | null;
+  while ((tradeMatch = tradeRowRegex.exec(stocksText)) !== null) {
+    const symbol = tradeMatch[1];
+    const date = tradeMatch[2];
+    const qty = parseIbkrNumber(tradeMatch[3]);
+    const proceeds = parseIbkrNumber(tradeMatch[4]);
+    const commFee = parseIbkrNumber(tradeMatch[5]);
+    const basis = parseIbkrNumber(tradeMatch[6]);
+
+    if (qty > 0) {
+      if (!buyPool[symbol]) buyPool[symbol] = [];
+      buyPool[symbol].push({ date, remainingQty: qty });
+    } else if (qty < 0) {
+      sellTrades.push({ symbol, date, qty: Math.abs(qty), proceeds, commFee, basis });
+    }
+  }
+
+  // Sort buys per symbol ascending by date for correct FIFO order
+  for (const symbol of Object.keys(buyPool)) {
+    buyPool[symbol].sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  console.log('[IBKR] buyPool symbols:', Object.keys(buyPool).length);
+  console.log('[IBKR] sellTrades count:', sellTrades.length);
+
+  const rows92A = buildIbkrRows92A(buyPool, sellTrades, instrumentMap);
+  console.log('[IBKR] rows92A count:', rows92A.length);
+
+  // ---------------------------------------------------------------------------
+  // Step C: Extract dividends + WHT → rows8A (E11)
+  // ---------------------------------------------------------------------------
+  const dividendsText = findIbkrSectionByRegex(
+    fullText,
+    /Dividends\s+Date\s+Description/i,
+    ['Change in Dividend Accruals', 'Deposits']
+  );
+  const whtText = findIbkrSectionByRegex(
+    fullText,
+    /Withholding\s+Tax\s+Date\s+Description/i,
+    ['Fees', 'Interest']
+  );
+  console.log('[IBKR] dividendsSection length:', dividendsText.length);
+  console.log('[IBKR] whtSection length:', whtText.length);
+
+  // Dividend row: DATE  TICKER(ISIN)  ...description...  AMOUNT
+  // Amount is the last number before the next date or "Total Dividends"
+  const dividendRegex = /(\d{4}-\d{2}-\d{2})\s+([A-Z][A-Z0-9.]*)\(([A-Z]{2}[A-Z0-9]{9}\d)\)\s+[\s\S]+?\s+([\d,.]+)(?=\s+(?:\d{4}-\d{2}-\d{2}|Total\s))/g;
+  const dividends: IbkrDividend[] = [];
+
+  let divMatch: RegExpExecArray | null;
+  while ((divMatch = dividendRegex.exec(dividendsText)) !== null) {
+    dividends.push({
+      date: divMatch[1],
+      ticker: divMatch[2],
+      isin: divMatch[3],
+      amount: parseIbkrNumber(divMatch[4]),
+    });
+  }
+
+  // WHT row: DATE  TICKER(ISIN)  ...description... - XX Tax  AMOUNT (negative)
+  const whtRegex = /(\d{4}-\d{2}-\d{2})\s+([A-Z][A-Z0-9.]*)\(([A-Z]{2}[A-Z0-9]{9}\d)\)\s+[\s\S]+?-\s*([A-Z]{2})\s+Tax\s+([-\d,.]+)/g;
+  const whtEntries: IbkrWhtEntry[] = [];
+
+  let whtMatch: RegExpExecArray | null;
+  while ((whtMatch = whtRegex.exec(whtText)) !== null) {
+    whtEntries.push({
+      date: whtMatch[1],
+      ticker: whtMatch[2],
+      isin: whtMatch[3],
+      countryCode: WHT_COUNTRY_CODE[whtMatch[4]] ?? isinToCountryCode(whtMatch[3]),
+      amount: Math.abs(parseIbkrNumber(whtMatch[5])),
+    });
+  }
+
+  console.log('[IBKR] dividends count:', dividends.length);
+  console.log('[IBKR] whtEntries count:', whtEntries.length);
+
+  // Aggregate dividends: group by (ticker, countryCode)
+  const divAggMap = new Map<string, { rendimentoBruto: number; impostoPago: number; codPais: string }>();
+  for (const div of dividends) {
+    const whtEntry = whtEntries.find(w => w.ticker === div.ticker && w.date === div.date);
+    const countryCode = whtEntry ? whtEntry.countryCode : isinToCountryCode(div.isin);
+    const key = `${div.ticker}:${countryCode}`;
+    const existing = divAggMap.get(key);
+    if (existing) {
+      existing.rendimentoBruto += div.amount;
+      existing.impostoPago += whtEntry?.amount ?? 0;
+    } else {
+      divAggMap.set(key, {
+        rendimentoBruto: div.amount,
+        impostoPago: whtEntry?.amount ?? 0,
+        codPais: countryCode,
+      });
+    }
+  }
+
+  const rows8A: TaxRow8A[] = [];
+  for (const [, entry] of divAggMap) {
+    rows8A.push({
+      codigo: 'E11',
+      codPais: entry.codPais,
+      rendimentoBruto: entry.rendimentoBruto.toFixed(2),
+      impostoPago: entry.impostoPago.toFixed(2),
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Step D: Extract credit interest → rows8A (E21, Ireland 372)
+  // ---------------------------------------------------------------------------
+  const interestText = findIbkrSectionByRegex(
+    fullText,
+    /Interest\s+Date\s+Description/i,
+    ['Dividends', 'Deposits']
+  );
+  console.log('[IBKR] interestSection length:', interestText.length);
+
+  const creditInterestRegex = /(?:Credit Interest|IBKR Managed Securities \(SYEP\) Interest)\s+for\s+\S+\s+([\d,.]+)/g;
+  let totalInterest = 0;
+  let interestLineMatch: RegExpExecArray | null;
+  while ((interestLineMatch = creditInterestRegex.exec(interestText)) !== null) {
+    totalInterest += parseIbkrNumber(interestLineMatch[1]);
+  }
+
+  // WHT on credit interest (appears in the Withholding Tax section)
+  const interestWhtRegex = /Withholding\s+@\s+\d+%\s+on\s+Credit\s+Interest\s+for\s+\S+\s+([-\d,.]+)/g;
+  let totalInterestWht = 0;
+  let interestWhtLineMatch: RegExpExecArray | null;
+  while ((interestWhtLineMatch = interestWhtRegex.exec(whtText)) !== null) {
+    totalInterestWht += Math.abs(parseIbkrNumber(interestWhtLineMatch[1]));
+  }
+
+  if (totalInterest > 0) {
+    rows8A.push({
+      codigo: 'E21',
+      codPais: '372',
+      rendimentoBruto: totalInterest.toFixed(2),
+      impostoPago: totalInterestWht.toFixed(2),
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Step E: Extract options realized P/L → rowsG13 (G51, US 840)
+  // ---------------------------------------------------------------------------
+  const optionsText = extractIbkrSection(tradesSection, 'Equity and Index Options', ['CFDs', 'Forex']);
+  console.log('[IBKR] optionsSection length:', optionsText.length);
+
+  // For options/CFDs: extract Realized P/L field from each trade row (field 8 after date/time)
+  // Row after date+time: QTY  T.PRICE  C.PRICE  PROCEEDS  COMM/FEE  BASIS  REALIZED_PL  MTM_PL  CODE
+  const derivativeRealizedPLRegex = /(\d{4}-\d{2}-\d{2}),\s*\d{2}:\d{2}:\d{2}\s+[-\d,.]+\s+[\d,.]+\s+[\d,.]+\s+[-\d,.]+\s+[-\d,.]+\s+[-\d,.]+\s+([-\d,.]+)\s+[-\d,.]+\s+(\S+)/g;
+
+  let totalOptionsRealizedPL = 0;
+  let optMatch: RegExpExecArray | null;
+  while ((optMatch = derivativeRealizedPLRegex.exec(optionsText)) !== null) {
+    const realizedPL = parseIbkrNumber(optMatch[2]);
+    if (realizedPL !== 0) {
+      totalOptionsRealizedPL += realizedPL;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Step F: Extract CFD realized P/L → rowsG13 (G51, Ireland 372)
+  // ---------------------------------------------------------------------------
+  const cfdsText = extractIbkrSection(tradesSection, 'CFDs', ['Forex', 'Bonds', 'Warrants']);
+  console.log('[IBKR] cfdsSection length:', cfdsText.length);
+
+  let totalCfdRealizedPL = 0;
+  const cfdRealizedPLRegex = new RegExp(derivativeRealizedPLRegex.source, derivativeRealizedPLRegex.flags);
+  let cfdMatch: RegExpExecArray | null;
+  while ((cfdMatch = cfdRealizedPLRegex.exec(cfdsText)) !== null) {
+    const realizedPL = parseIbkrNumber(cfdMatch[2]);
+    if (realizedPL !== 0) {
+      totalCfdRealizedPL += realizedPL;
+    }
+  }
+
+  const rowsG13: TaxRowG13[] = [];
+  if (totalOptionsRealizedPL !== 0) {
+    rowsG13.push({
+      codigoOperacao: 'G51',
+      titular: 'A',
+      rendimentoLiquido: totalOptionsRealizedPL.toFixed(2),
+      paisContraparte: '840',
+    });
+  }
+  if (totalCfdRealizedPL !== 0) {
+    rowsG13.push({
+      codigoOperacao: 'G51',
+      titular: 'A',
+      rendimentoLiquido: totalCfdRealizedPL.toFixed(2),
+      paisContraparte: '372',
+    });
+  }
+
+  console.log('[IBKR] rows8A count:', rows8A.length);
+  console.log('[IBKR] rowsG13 count:', rowsG13.length);
+
+  // --- Validate at least something was extracted ---
+  const totalRows = rows8A.length + rows92A.length + rowsG13.length;
+  if (totalRows === 0) {
+    throw new PdfParsingError(
+      `No trades, dividends, or interest data found in "${file.name}". Please verify this is an IBKR Activity Statement.`,
+      'parser.error.ibkr_noData',
+      { fileName: file.name },
+    );
+  }
+
+  return {
+    rows8A,
+    rows92A,
+    rows92B: [],
+    rowsG9: [],
+    rowsG13,
   };
 }

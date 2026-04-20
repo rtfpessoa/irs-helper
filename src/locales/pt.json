@@ -46,6 +46,8 @@
       "activobank_no_rows": "Não foram encontrados dados de transações de ações em \"{{fileName}}\". Verifique que este é um extrato de mais-valias do ActivoBank.",
       "freedom24_wrong_file": "\"{{fileName}}\" não parece ser um Relatório de Transações da Freedom24. Por favor, carregue o ficheiro correto.",
       "freedom24_no_rows": "Não foram encontrados dados de dividendos ou transações em \"{{fileName}}\". Verifique que este é um Relatório da Freedom24.",
+      "ibkr_wrongFile": "\"{{fileName}}\" não parece ser um Extrato de Atividade IBKR. Por favor, carregue o ficheiro correto.",
+      "ibkr_noData": "Não foram encontrados dados de transações, dividendos ou juros em \"{{fileName}}\". Verifique que este é um Extrato de Atividade IBKR.",
       "file_too_large": "\"{{fileName}}\" é demasiado grande para ser processado com segurança. Forneça um PDF menor.",
       "too_many_pages": "\"{{fileName}}\" tem demasiadas páginas para ser processado com segurança."
     }
@@ -90,7 +92,15 @@
     "freedom24_warning_title": "Limitações de Leitura",
     "freedom24_warning_1": "Equity swaps e outros instrumentos derivados não são importados — declare-os manualmente.",
     "freedom24_warning_2": "Vendas cuja compra ocorreu num período fiscal anterior são ignoradas — declare-as manualmente.",
-    "freedom24_warning_3": "ADRs com prefixo ISIN 'US' (ex: ASML) são mapeados para o país 840 (EUA) — verifique o campo de país manualmente."
+    "freedom24_warning_3": "ADRs com prefixo ISIN 'US' (ex: ASML) são mapeados para o país 840 (EUA) — verifique o campo de país manualmente.",
+    "ibkr_lane": "Interactive Brokers",
+    "ibkr_activityStatement": "Extrato de Atividade IBKR (PDF)"
+  },
+  "warnings": {
+    "ibkr_title": "Limitações IBKR",
+    "ibkr_multiCurrency": "Os valores de transações em moedas não-EUR (USD, GBP, CAD, PLN) são reportados na moeda original. Deve converter manualmente estes valores para EUR usando as taxas de câmbio oficiais do BCE para cada data de transação.",
+    "ibkr_adrCountry": "Para dividendos de ADRs (ex.: BABA, VALE), o país de origem é inferido a partir das descrições de retenção na fonte. Se não existir retenção, utiliza-se o país do prefixo ISIN (tipicamente EUA).",
+    "ibkr_optionsCode": "Todos os lucros/prejuízos de opções e CFDs são reportados no Anexo G Quadro 13 com código de operação G51. Verifique esta classificação com o seu consultor fiscal."
   },
   "report": {
     "annex_g": "Anexo G",

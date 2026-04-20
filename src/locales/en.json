@@ -46,6 +46,8 @@
       "activobank_no_rows": "No stock transaction data found in \"{{fileName}}\". Please verify this is an ActivoBank capital gains statement.",
       "freedom24_wrong_file": "\"{{fileName}}\" does not appear to be a Freedom24 Trade Report. Please upload the correct file.",
       "freedom24_no_rows": "No dividend or trade data found in \"{{fileName}}\". Please verify this is a Freedom24 Trade Report.",
+      "ibkr_wrongFile": "\"{{fileName}}\" does not appear to be an IBKR Activity Statement. Please upload the correct file.",
+      "ibkr_noData": "No trades, dividends, or interest data found in \"{{fileName}}\". Please verify this is an IBKR Activity Statement.",
       "file_too_large": "\"{{fileName}}\" is too large to process safely. Please provide a smaller PDF.",
       "too_many_pages": "\"{{fileName}}\" has too many pages to process safely."
     }
@@ -90,7 +92,15 @@
     "freedom24_warning_title": "Parsing Limitations",
     "freedom24_warning_1": "Equity swaps and other derivative instrument closes are not imported — declare them manually.",
     "freedom24_warning_2": "Sell trades whose opening buy belongs to a prior tax period are skipped — declare them manually.",
-    "freedom24_warning_3": "ADRs with a US ISIN prefix (e.g. ASML) are mapped to country 840 (US) — verify the country field manually."
+    "freedom24_warning_3": "ADRs with a US ISIN prefix (e.g. ASML) are mapped to country 840 (US) — verify the country field manually.",
+    "ibkr_lane": "Interactive Brokers",
+    "ibkr_activityStatement": "IBKR Activity Statement (PDF)"
+  },
+  "warnings": {
+    "ibkr_title": "IBKR Limitations",
+    "ibkr_multiCurrency": "Non-EUR trade amounts (USD, GBP, CAD, PLN) are reported in their original currency. You must manually convert these values to EUR using ECB official exchange rates for each transaction date.",
+    "ibkr_adrCountry": "For ADR dividends (e.g., BABA, VALE), the source country is inferred from withholding tax descriptions. If no withholding tax exists, it defaults to the ISIN prefix country (typically US).",
+    "ibkr_optionsCode": "All options and CFD profits/losses are reported under Anexo G Quadro 13 with operation code G51. Verify this classification with your tax advisor."
   },
   "report": {
     "annex_g": "Annex G",

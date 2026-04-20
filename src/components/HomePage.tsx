@@ -41,6 +41,7 @@ export function HomePage() {
   const [trading212Pdf, setTrading212Pdf] = useState<File | null>(null);
   const [activoBankPdf, setActivoBankPdf] = useState<File | null>(null);
   const [freedom24Pdf, setFreedom24Pdf] = useState<File | null>(null);
+  const [ibkrPdf, setIbkrPdf] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<EnrichmentResult | null>(null);
   const [tablesResult, setTablesResult] = useState<BrokerFilesResult | null>(null);
@@ -116,7 +117,7 @@ export function HomePage() {
     };
   }, [showDonationPrompt]);
 
-  const hasBrokerFile = xtbCapitalGainsPdf || xtbDividendsPdf || tradeRepublicPdf || trading212Pdf || activoBankPdf || freedom24Pdf;
+  const hasBrokerFile = xtbCapitalGainsPdf || xtbDividendsPdf || tradeRepublicPdf || trading212Pdf || activoBankPdf || freedom24Pdf || ibkrPdf;
 
   const brokerSections: BrokerSection[] = useMemo(
     () => [
@@ -204,8 +205,26 @@ export function HomePage() {
           },
         ],
       },
+      {
+        badge: 'IBKR',
+        badgeClass: 'broker-badge--ibkr',
+        laneKey: 'uploader.ibkr_lane',
+        warningTitleKey: 'warnings.ibkr_title',
+        warningKeys: [
+          'warnings.ibkr_multiCurrency',
+          'warnings.ibkr_adrCountry',
+          'warnings.ibkr_optionsCode',
+        ],
+        uploaders: [
+          {
+            labelKey: 'uploader.ibkr_activityStatement',
+            file: ibkrPdf,
+            setFile: setIbkrPdf,
+          },
+        ],
+      },
     ],
-    [xtbCapitalGainsPdf, xtbDividendsPdf, tradeRepublicPdf, trading212Pdf, activoBankPdf, freedom24Pdf],
+    [xtbCapitalGainsPdf, xtbDividendsPdf, tradeRepublicPdf, trading212Pdf, activoBankPdf, freedom24Pdf, ibkrPdf],
   );
 
   const canProcess = workflowMode === 'enrich'
@@ -230,6 +249,7 @@ export function HomePage() {
           trading212Pdf,
           activoBankPdf,
           freedom24Pdf,
+          ibkrPdf,
         });
         setResult(enrichmentResult);
       } else {
@@ -240,6 +260,7 @@ export function HomePage() {
           trading212Pdf,
           activoBankPdf,
           freedom24Pdf,
+          ibkrPdf,
         });
         setTablesResult(brokerResult);
       }
