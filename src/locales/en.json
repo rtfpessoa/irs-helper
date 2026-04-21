@@ -57,9 +57,11 @@
       "too_many_pages": "\"{{fileName}}\" has too many pages to process safely.",
       "binance_wrong_file": "\"{{fileName}}\" does not appear to be a supported Binance Transaction History export. Expected a header row with columns such as UTC Time, Operation, Coin, and Change.",
       "binance_no_rows": "No crypto capital gains found in \"{{fileName}}\". Verify this Binance export contains Buy/Sell transactions.",
-      "binance_no_sells": "\"{{fileName}}\" contains crypto purchases but no sales for EUR. Only sales of crypto for EUR generate IRS rows."
+      "binance_no_sells": "\"{{fileName}}\" contains crypto purchases but no sales for EUR. Only sales of crypto for EUR generate IRS rows.",
+      "revolut_wrong_file": "\"{{fileName}}\" does not appear to be a Revolut Consolidated Statement. Please upload the correct file."
     }
   },
+  "parser.warning.revolut_crypto_usd_only": "Revolut crypto transactions are reported in USD only. Declare crypto gains manually using ECB exchange rates for each transaction date.",
   "uploader": {
     "xml_lane": "Base IRS Declaration",
     "xml_file": "Select your .xml file",
@@ -83,11 +85,12 @@
     "click_to_change": "Click to change",
     "drag_drop": "Drag & drop or click to browse",
     "remove_file": "Remove file",
+    "warnings_title": "Parser Limitations",
     "xtb_warning_title": "Parsing Limitations",
     "xtb_warning_1": "Optional 'RENDIMENTOS OBTIDOS EM TERRITÓRIO PORTUGUÊS' (Annex E 4 B) are ignored.",
     "xtb_warning_2": "Shares/Bonds from PT-resident entities (Annex G 9) are ignored.",
-    "xtb_warning_3": "Foreign Sourced CFDs (Annex J 9.2 B) are ignored.",
-    "xtb_warning_4": "PT Sourced Fractional Shares (Annex G 8) are ignored.",
+    "xtb_warning_3": "Foreign sourced CFDs (Annex J 9.2 B) are ignored.",
+    "xtb_warning_4": "PT sourced fractional shares (Annex G 8) are ignored.",
     "tr_warning_title": "Parsing Limitations",
     "tr_warning_1": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Annex J 9.2 A) are ignored.",
     "tr_warning_2": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Annex J 9.2 B) are ignored.",
@@ -113,10 +116,16 @@
     "binance_lane": "Binance",
     "binance_report": "Transaction History XLSX",
     "binance_warning_title": "Parsing Limitations",
-    "binance_warning_1": "Only crypto-to-EUR Buy/Sell trades generate IRS rows. Crypto-to-crypto swaps are treated as lot substitutions.",
+    "binance_warning_1": "Only crypto-to-EUR buy/sell trades generate IRS rows. Crypto-to-crypto swaps are treated as lot substitutions.",
     "binance_warning_2": "Staking rewards, distributions, and earn interest create acquisition lots — they are only declared when later sold.",
     "binance_warning_3": "The managing entity country defaults to France (250). Verify this matches your Binance contracting entity.",
-    "binance_warning_4": "Fees are only included when directly associated with a Buy or Sell trade."
+    "binance_warning_4": "Fees are only included when directly associated with a Buy or Sell trade.",
+    "revolut_lane": "Revolut",
+    "revolut_report": "Consolidated Statement PDF",
+    "revolut_warning_title": "Parsing Limitations",
+    "revolut_warning_1": "Crypto transactions are reported in USD only — declare crypto gains manually using ECB exchange rates.",
+    "revolut_warning_2": "ADR stocks (e.g. ASML) use the trading country (US) — verify the country code matches the issuer's country.",
+    "revolut_warning_3": "Money market fund service fees are not deductible — only gross interest is reported."
   },
   "warnings": {
     "ibkr_title": "IBKR Limitations",

@@ -9,6 +9,7 @@ import { IrsTablesViewer } from './IrsTablesViewer';
 import { NO_ROWS_FOUND_ERROR, downloadXmlFile, processBrokerFiles, processTaxFiles } from '../utils/processFiles';
 import type { BrokerFilesResult } from '../utils/processFiles';
 import { BrokerParsingError } from '../utils/parserErrors';
+import { getBrokerBadgeMeta } from '../utils/brokerBadgeMeta';
 import type { EnrichmentResult } from '../types';
 
 type WorkflowMode = 'enrich' | 'tables';
@@ -24,7 +25,6 @@ interface BrokerSection {
   badge: string;
   badgeClass: string;
   laneKey: string;
-  warningTitleKey: string;
   warningKeys: string[];
   uploaders: BrokerUploader[];
 }
@@ -45,6 +45,7 @@ export function HomePage() {
   const [ibkrPdf, setIbkrPdf] = useState<File | null>(null);
   const [degiroTransactionsCsv, setDegiroTransactionsCsv] = useState<File | null>(null);
   const [binanceTransactionsXlsx, setBinanceTransactionsXlsx] = useState<File | null>(null);
+  const [revolutConsolidatedPdf, setRevolutConsolidatedPdf] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<EnrichmentResult | null>(null);
   const [tablesResult, setTablesResult] = useState<BrokerFilesResult | null>(null);
@@ -120,15 +121,14 @@ export function HomePage() {
     };
   }, [showDonationPrompt]);
 
-  const hasBrokerFile = xtbCapitalGainsPdf || xtbDividendsPdf || tradeRepublicPdf || trading212Pdf || activoBankPdf || freedom24Pdf || ibkrPdf || degiroTransactionsCsv || binanceTransactionsXlsx;
+  const hasBrokerFile = xtbCapitalGainsPdf || xtbDividendsPdf || tradeRepublicPdf || trading212Pdf || activoBankPdf || freedom24Pdf || ibkrPdf || degiroTransactionsCsv || binanceTransactionsXlsx || revolutConsolidatedPdf;
 
   const brokerSections: BrokerSection[] = useMemo(
     () => [
       {
-        badge: 'XTB',
-        badgeClass: 'broker-badge--xtb',
+        badge: getBrokerBadgeMeta('xtb')?.shortLabel ?? 'XTB',
+        badgeClass: getBrokerBadgeMeta('xtb')?.badgeClass ?? 'broker-badge--xtb',
         laneKey: 'uploader.xtb_lane',
-        warningTitleKey: 'uploader.xtb_warning_title',
         warningKeys: [
           'uploader.xtb_warning_1',
           'uploader.xtb_warning_2',
@@ -151,10 +151,9 @@ export function HomePage() {
         ],
       },
       {
-        badge: 'TR',
-        badgeClass: 'broker-badge--tr',
+        badge: getBrokerBadgeMeta('trade republic')?.shortLabel ?? 'TR',
+        badgeClass: getBrokerBadgeMeta('trade republic')?.badgeClass ?? 'broker-badge--tr',
         laneKey: 'uploader.tr_lane',
-        warningTitleKey: 'uploader.tr_warning_title',
         warningKeys: ['uploader.tr_warning_1', 'uploader.tr_warning_2'],
         uploaders: [
           {
@@ -166,10 +165,9 @@ export function HomePage() {
         ],
       },
       {
-        badge: 'T212',
-        badgeClass: 'broker-badge--t212',
+        badge: getBrokerBadgeMeta('trading 212')?.shortLabel ?? 'T212',
+        badgeClass: getBrokerBadgeMeta('trading 212')?.badgeClass ?? 'broker-badge--t212',
         laneKey: 'uploader.t212_lane',
-        warningTitleKey: 'uploader.t212_warning_title',
         warningKeys: ['uploader.t212_warning_1'],
         uploaders: [
           {
@@ -181,10 +179,9 @@ export function HomePage() {
         ],
       },
       {
-        badge: 'AB',
-        badgeClass: 'broker-badge--activobank',
+        badge: getBrokerBadgeMeta('activobank')?.shortLabel ?? 'AB',
+        badgeClass: getBrokerBadgeMeta('activobank')?.badgeClass ?? 'broker-badge--activobank',
         laneKey: 'uploader.activobank_lane',
-        warningTitleKey: 'uploader.activobank_warning_title',
         warningKeys: ['uploader.activobank_warning_1'],
         uploaders: [
           {
@@ -196,10 +193,9 @@ export function HomePage() {
         ],
       },
       {
-        badge: 'DEGIRO',
-        badgeClass: 'broker-badge--degiro',
+        badge: getBrokerBadgeMeta('degiro')?.shortLabel ?? 'DEGIRO',
+        badgeClass: getBrokerBadgeMeta('degiro')?.badgeClass ?? 'broker-badge--degiro',
         laneKey: 'uploader.degiro_lane',
-        warningTitleKey: 'uploader.degiro_warning_title',
         warningKeys: [
           'uploader.degiro_warning_1',
           'uploader.degiro_warning_2',
@@ -216,10 +212,9 @@ export function HomePage() {
         ],
       },
       {
-        badge: 'F24',
-        badgeClass: 'broker-badge--freedom24',
+        badge: getBrokerBadgeMeta('freedom24')?.shortLabel ?? 'F24',
+        badgeClass: getBrokerBadgeMeta('freedom24')?.badgeClass ?? 'broker-badge--freedom24',
         laneKey: 'uploader.freedom24_lane',
-        warningTitleKey: 'uploader.freedom24_warning_title',
         warningKeys: [
           'uploader.freedom24_warning_1',
           'uploader.freedom24_warning_2',
@@ -235,10 +230,9 @@ export function HomePage() {
         ],
       },
       {
-        badge: 'IBKR',
-        badgeClass: 'broker-badge--ibkr',
+        badge: getBrokerBadgeMeta('ibkr')?.shortLabel ?? 'IBKR',
+        badgeClass: getBrokerBadgeMeta('ibkr')?.badgeClass ?? 'broker-badge--ibkr',
         laneKey: 'uploader.ibkr_lane',
-        warningTitleKey: 'warnings.ibkr_title',
         warningKeys: [
           'warnings.ibkr_multiCurrency',
           'warnings.ibkr_adrCountry',
@@ -254,10 +248,9 @@ export function HomePage() {
         ],
       },
       {
-        badge: 'BNB',
-        badgeClass: 'broker-badge--binance',
+        badge: getBrokerBadgeMeta('binance')?.shortLabel ?? 'BNB',
+        badgeClass: getBrokerBadgeMeta('binance')?.badgeClass ?? 'broker-badge--binance',
         laneKey: 'uploader.binance_lane',
-        warningTitleKey: 'uploader.binance_warning_title',
         warningKeys: [
           'uploader.binance_warning_1',
           'uploader.binance_warning_2',
@@ -271,8 +264,26 @@ export function HomePage() {
           setFile: setBinanceTransactionsXlsx,
         }],
       },
+      {
+        badge: getBrokerBadgeMeta('revolut')?.shortLabel ?? 'REV',
+        badgeClass: getBrokerBadgeMeta('revolut')?.badgeClass ?? 'broker-badge--revolut',
+        laneKey: 'uploader.revolut_lane',
+        warningKeys: [
+          'uploader.revolut_warning_1',
+          'uploader.revolut_warning_2',
+          'uploader.revolut_warning_3',
+        ],
+        uploaders: [
+          {
+            labelKey: 'uploader.revolut_report',
+            accept: '.pdf',
+            file: revolutConsolidatedPdf,
+            setFile: setRevolutConsolidatedPdf,
+          },
+        ],
+      },
     ],
-    [xtbCapitalGainsPdf, xtbDividendsPdf, tradeRepublicPdf, trading212Pdf, activoBankPdf, freedom24Pdf, ibkrPdf, degiroTransactionsCsv, binanceTransactionsXlsx],
+    [xtbCapitalGainsPdf, xtbDividendsPdf, tradeRepublicPdf, trading212Pdf, activoBankPdf, freedom24Pdf, ibkrPdf, degiroTransactionsCsv, binanceTransactionsXlsx, revolutConsolidatedPdf],
   );
 
   const canProcess = workflowMode === 'enrich'
@@ -300,6 +311,7 @@ export function HomePage() {
           ibkrPdf,
           degiroTransactionsCsv,
           binanceTransactionsXlsx,
+          revolutConsolidatedPdf,
         });
         setResult(enrichmentResult);
       } else {
@@ -313,6 +325,7 @@ export function HomePage() {
           ibkrPdf,
           degiroTransactionsCsv,
           binanceTransactionsXlsx,
+          revolutConsolidatedPdf,
         });
         setTablesResult(brokerResult);
       }
@@ -430,20 +443,19 @@ export function HomePage() {
                   <div className="broker-header">
                     <span className={`broker-badge ${section.badgeClass}`}>{section.badge}</span>
                     <span className="broker-label">{t(section.laneKey)}</span>
-                    <div className="tooltip-container">
-                      <div className="tooltip-trigger">
-                        <AlertTriangle size={14} />
-                      </div>
-                      <div className="tooltip-content">
-                        <span className="tooltip-title">{t(section.warningTitleKey)}</span>
-                        <ul className="tooltip-list">
-                          {section.warningKeys.map(warningKey => (
-                            <li key={warningKey}>{t(warningKey)}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
                     <span className="broker-optional">{t('uploader.optional')}</span>
+                  </div>
+
+                  <div className="broker-warnings">
+                    <span className="broker-warnings__title">
+                      <AlertTriangle size={12} />
+                      {t('uploader.warnings_title')}
+                    </span>
+                    <ul className="broker-warnings__list">
+                      {section.warningKeys.map(warningKey => (
+                        <li key={warningKey}>{t(warningKey)}</li>
+                      ))}
+                    </ul>
                   </div>
 
                   <div className="broker-files">

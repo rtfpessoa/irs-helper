@@ -1,6 +1,7 @@
 import { TrendingUp, Receipt, Landmark, CheckCircle2, Activity, Coins } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { EnrichmentSummary } from '../types';
+import { getBrokerBadgeMeta } from '../utils/brokerBadgeMeta';
 
 interface EnrichmentReportProps {
   summary: EnrichmentSummary;
@@ -21,13 +22,7 @@ function TableCard({ title, subtitle, rowsAdded, totals, sources, icon, colorCla
   if (rowsAdded === 0) return null; // Don't show inactive tables at all
 
   const getSourceTagClass = (source: string) => {
-    const s = source.toLowerCase();
-    if (s.includes('xtb')) return 'enrichment-card__source-tag--xtb';
-    if (s.includes('trade republic')) return 'enrichment-card__source-tag--trade-republic';
-    if (s.includes('trading 212')) return 'enrichment-card__source-tag--t212';
-    if (s.includes('activobank')) return 'enrichment-card__source-tag--activobank';
-    if (s.includes('binance')) return 'enrichment-card__source-tag--binance';
-    return '';
+    return getBrokerBadgeMeta(source)?.sourceTagClass ?? '';
   };
 
   return (
@@ -43,7 +38,9 @@ function TableCard({ title, subtitle, rowsAdded, totals, sources, icon, colorCla
 
       <div className="enrichment-card__sources">
         {sources.map(s => (
-          <span key={s} className={`enrichment-card__source-tag ${getSourceTagClass(s)}`}>{s}</span>
+          <span key={s} className={`enrichment-card__source-tag ${getSourceTagClass(s)}`}>
+            {getBrokerBadgeMeta(s)?.shortLabel ?? s}
+          </span>
         ))}
       </div>
 

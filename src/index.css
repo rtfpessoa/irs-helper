@@ -458,7 +458,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .broker-badge {
@@ -474,35 +474,88 @@ body {
   flex-shrink: 0;
 }
 
+:root {
+  --broker-xtb-bg: #dc2626;
+  --broker-xtb-fg: #ffffff;
+  --broker-xtb-border: #b91c1c;
+  --broker-tr-bg: #000000;
+  --broker-tr-fg: #ffffff;
+  --broker-tr-border: rgba(255, 255, 255, 0.3);
+  --broker-t212-bg: #0099fd;
+  --broker-t212-fg: #ffffff;
+  --broker-t212-border: #007dd4;
+  --broker-activobank-bg: #ffffff;
+  --broker-activobank-fg: #7cb8ff;
+  --broker-activobank-border: #cfe6ff;
+  --broker-degiro-bg: #2563eb;
+  --broker-degiro-fg: #ffffff;
+  --broker-degiro-border: #1d4ed8;
+  --broker-freedom24-bg: #00b051;
+  --broker-freedom24-fg: #ffffff;
+  --broker-freedom24-border: #009247;
+  --broker-ibkr-bg: #d32011;
+  --broker-ibkr-fg: #ffffff;
+  --broker-ibkr-border: #b71c10;
+  --broker-binance-bg: #f3ba2f;
+  --broker-binance-fg: #111827;
+  --broker-binance-border: #d9a520;
+  --broker-revolut-bg: #0b0b0f;
+  --broker-revolut-fg: #f5f7fa;
+  --broker-revolut-border: #2a2d34;
+}
+
 .broker-badge--xtb {
-  background: #dc2626;
-  color: white;
+  background: var(--broker-xtb-bg);
+  color: var(--broker-xtb-fg);
+  border: 1px solid var(--broker-xtb-border);
 }
 
 .broker-badge--tr {
-  background: #000000;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: var(--broker-tr-bg);
+  color: var(--broker-tr-fg);
+  border: 1px solid var(--broker-tr-border);
 }
 
 .broker-badge--t212 {
-  background: #0099fd;
-  color: #ffffff;
+  background: var(--broker-t212-bg);
+  color: var(--broker-t212-fg);
+  border: 1px solid var(--broker-t212-border);
+}
+
+.broker-badge--activobank {
+  background: var(--broker-activobank-bg);
+  color: var(--broker-activobank-fg);
+  border: 1px solid var(--broker-activobank-border);
 }
 
 .broker-badge--freedom24 {
-  background: #00b051;
-  color: #ffffff;
+  background: var(--broker-freedom24-bg);
+  color: var(--broker-freedom24-fg);
+  border: 1px solid var(--broker-freedom24-border);
 }
 
 .broker-badge--ibkr {
-  background: #D32011;
-  color: #ffffff;
+  background: var(--broker-ibkr-bg);
+  color: var(--broker-ibkr-fg);
+  border: 1px solid var(--broker-ibkr-border);
 }
 
 .broker-badge--degiro {
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--broker-degiro-bg);
+  color: var(--broker-degiro-fg);
+  border: 1px solid var(--broker-degiro-border);
+}
+
+.broker-badge--binance {
+  background: var(--broker-binance-bg);
+  color: var(--broker-binance-fg);
+  border: 1px solid var(--broker-binance-border);
+}
+
+.broker-badge--revolut {
+  background: var(--broker-revolut-bg);
+  color: var(--broker-revolut-fg);
+  border: 1px solid var(--broker-revolut-border);
 }
 
 [data-theme="light"] .broker-badge--tr {
@@ -519,6 +572,52 @@ body {
   font-size: 0.75rem;
   color: var(--text-secondary);
   margin-left: auto;
+}
+
+.broker-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.broker-warnings__title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--warning-color);
+}
+
+.broker-warnings__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.broker-warnings__list li {
+  font-size: 0.77rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 0.5rem;
+}
+
+.broker-warnings__list li::before {
+  content: "•";
+  color: var(--warning-color);
+  font-weight: 900;
+  flex-shrink: 0;
 }
 
 .broker-files {
@@ -898,27 +997,57 @@ body {
 }
 
 .enrichment-card__source-tag--xtb {
-  background: #dc2626;
-  color: white;
-  border-color: #b91c1c;
+  background: var(--broker-xtb-bg);
+  color: var(--broker-xtb-fg);
+  border-color: var(--broker-xtb-border);
 }
 
 .enrichment-card__source-tag--trade-republic {
-  background: #000000;
-  color: #ffffff;
-  border: 1px solid #ffffff;
+  background: var(--broker-tr-bg);
+  color: var(--broker-tr-fg);
+  border-color: var(--broker-tr-border);
 }
 
 .enrichment-card__source-tag--t212 {
-  background: #0099fd;
-  color: #ffffff;
-  border-color: #007dd4;
+  background: var(--broker-t212-bg);
+  color: var(--broker-t212-fg);
+  border-color: var(--broker-t212-border);
+}
+
+.enrichment-card__source-tag--activobank {
+  background: var(--broker-activobank-bg);
+  color: var(--broker-activobank-fg);
+  border-color: var(--broker-activobank-border);
 }
 
 .enrichment-card__source-tag--degiro {
-  background: #2563eb;
-  color: #ffffff;
-  border-color: #1d4ed8;
+  background: var(--broker-degiro-bg);
+  color: var(--broker-degiro-fg);
+  border-color: var(--broker-degiro-border);
+}
+
+.enrichment-card__source-tag--freedom24 {
+  background: var(--broker-freedom24-bg);
+  color: var(--broker-freedom24-fg);
+  border-color: var(--broker-freedom24-border);
+}
+
+.enrichment-card__source-tag--ibkr {
+  background: var(--broker-ibkr-bg);
+  color: var(--broker-ibkr-fg);
+  border-color: var(--broker-ibkr-border);
+}
+
+.enrichment-card__source-tag--binance {
+  background: var(--broker-binance-bg);
+  color: var(--broker-binance-fg);
+  border-color: var(--broker-binance-border);
+}
+
+.enrichment-card__source-tag--revolut {
+  background: var(--broker-revolut-bg);
+  color: var(--broker-revolut-fg);
+  border-color: var(--broker-revolut-border);
 }
 
 .enrichment-report__annex-group {
@@ -1560,121 +1689,4 @@ body {
   gap: 0.75rem;
 }
 
-/* =========================================================
-   Tooltips
-   ========================================================= */
 
-.tooltip-container {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.tooltip-trigger {
-  color: var(--warning-color);
-  cursor: help;
-  transition: all 0.2s ease;
-  display: flex;
-  opacity: 0.8;
-}
-
-.tooltip-trigger:hover {
-  filter: brightness(1.2);
-  opacity: 1;
-  transform: scale(1.1);
-}
-
-.tooltip-content {
-  position: absolute;
-  bottom: 125%;
-  left: 0;
-  transform: translateY(10px);
-  background: var(--panel-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--panel-border);
-  padding: 1.25rem;
-  border-radius: 12px;
-  width: 300px;
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 100;
-  pointer-events: none;
-}
-
-.tooltip-container:hover .tooltip-content {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.tooltip-title {
-  font-weight: 700;
-  margin-bottom: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--warning-color);
-  text-transform: uppercase;
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-}
-
-.tooltip-list {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.tooltip-list li {
-  font-size: 0.78rem;
-  line-height: 1.4;
-  color: var(--text-secondary);
-  display: flex;
-  gap: 0.6rem;
-}
-
-.tooltip-list li::before {
-  content: "•";
-  color: var(--warning-color);
-  font-weight: 900;
-  flex-shrink: 0;
-}
-
-[data-theme="light"] .tooltip-content {
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-}
-
-@media (max-width: 768px) {
-  .broker-header {
-    flex-wrap: wrap;
-    align-items: flex-start;
-  }
-
-  .tooltip-container {
-    width: 100%;
-    order: 3;
-    margin-top: 0.45rem;
-  }
-
-  .tooltip-trigger {
-    display: none;
-  }
-
-  .tooltip-content {
-    position: static;
-    width: 100%;
-    transform: none;
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    padding: 0.85rem 0.95rem;
-    box-shadow: none;
-  }
-}

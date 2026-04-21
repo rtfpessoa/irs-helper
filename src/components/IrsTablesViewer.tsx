@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Activity, Coins, Landmark, Receipt, TrendingUp } from 'lucide-react';
 import type { ParsedPdfData, TaxRow, TaxRow8A, TaxRow92B, TaxRowG9, TaxRowG13, TaxRowG18A, TaxRowG1q7 } from '../types';
+import { getBrokerBadgeMeta } from '../utils/brokerBadgeMeta';
 
 interface IrsTablesViewerProps {
   parsedData: ParsedPdfData;
@@ -27,14 +28,7 @@ interface TableConfig<T> {
 }
 
 function getSourceTagClass(source: string) {
-  const s = source.toLowerCase();
-  if (s.includes('xtb')) return 'enrichment-card__source-tag--xtb';
-  if (s.includes('trade republic')) return 'enrichment-card__source-tag--trade-republic';
-  if (s.includes('trading 212')) return 'enrichment-card__source-tag--t212';
-  if (s.includes('activobank')) return 'enrichment-card__source-tag--activobank';
-  if (s.includes('degiro')) return 'enrichment-card__source-tag--degiro';
-  if (s.includes('binance')) return 'enrichment-card__source-tag--binance';
-  return '';
+  return getBrokerBadgeMeta(source)?.sourceTagClass ?? '';
 }
 
 function sumBy<T>(rows: T[], accessor: (row: T) => string): number {
@@ -65,7 +59,9 @@ function DataTable<T>({ config }: { config: TableConfig<T> }) {
 
       <div className="enrichment-card__sources">
         {config.sources.map(s => (
-          <span key={s} className={`enrichment-card__source-tag ${getSourceTagClass(s)}`}>{s}</span>
+          <span key={s} className={`enrichment-card__source-tag ${getSourceTagClass(s)}`}>
+            {getBrokerBadgeMeta(s)?.shortLabel ?? s}
+          </span>
         ))}
       </div>
 

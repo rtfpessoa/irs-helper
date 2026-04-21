@@ -17,6 +17,7 @@ vi.mock('./pdfParser', () => ({
   parseTrading212Pdf: vi.fn(),
   parseXtbCapitalGainsPdf: vi.fn(),
   parseXtbDividendsPdf: vi.fn(),
+  parseRevolutConsolidatedPdf: vi.fn(),
 }));
 
 describe('processBrokerFiles', () => {
