@@ -17,6 +17,7 @@ vi.mock('./pdfParser', () => ({
   parseTrading212Pdf: vi.fn(),
   parseXtbCapitalGainsPdf: vi.fn(),
   parseXtbDividendsPdf: vi.fn(),
+  parseRevolutConsolidatedPdf: vi.fn(),
 }));
 
 describe('processBrokerFiles', () => {
@@ -139,6 +140,9 @@ describe('processTaxFiles', () => {
       rows92B: [],
       rowsG9: [],
       rowsG13: [],
+      rowsG18A: [],
+      rowsG1q7: [],
+      warnings: [],
     });
 
     const result = await processTaxFiles({

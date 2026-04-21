@@ -1,4 +1,4 @@
-import type { TaxRow, TaxRow92B, TaxRow8A, TaxRowG9, TaxRowG13, ParsedPdfData, EnrichmentResult, EnrichmentSummary } from '../types';
+import type { TaxRow, TaxRow92B, TaxRow8A, TaxRowG9, TaxRowG13, TaxRowG18A, TaxRowG1q7, ParsedPdfData, EnrichmentResult, EnrichmentSummary } from '../types';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -9,6 +9,8 @@ function parseHighestNLinha(xml: string, blockName: string): number {
   if (blockName === 'AnexoJq092BT01') highest = 990;
   if (blockName === 'AnexoJq08AT01') highest = 800; // 8.A starts at 801
   if (blockName === 'AnexoGq09T01') highest = 9000; // G09 starts at 9001
+  if (blockName === 'AnexoGq18AT01') highest = 18000;
+  if (blockName === 'AnexoG1q07T01') highest = 700;
   const re = /<NLinha>(\d+)<\/NLinha>/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(xml)) !== null) {
@@ -78,8 +80,18 @@ function validateXmlShape(xml: string, data: ParsedPdfData): void {
   }
 
   const needsAnexoG = data.rowsG9.length > 0 || data.rowsG13.length > 0;
-  if (needsAnexoG && !xml.includes('<AnexoG')) {
+  if (needsAnexoG && !/<AnexoG[\s>]/.test(xml)) {
     throw new Error('Invalid XML: Anexo G is required for the selected broker reports.');
+  }
+
+  const needsAnexoGForCrypto = (data.rowsG18A ?? []).length > 0;
+  if (needsAnexoGForCrypto && !/<AnexoG[\s>]/.test(xml)) {
+    throw new Error('Invalid XML: Anexo G is required for crypto capital gains.');
+  }
+
+  const needsAnexoG1 = (data.rowsG1q7 ?? []).length > 0;
+  if (needsAnexoG1 && !xml.includes('<AnexoG1')) {
+    throw new Error('Invalid XML: Anexo G1 is required for crypto capital gains held >= 365 days.');
   }
 }
 
@@ -173,9 +185,11 @@ function processBlock<T>(originalXml: string, config: InjectConfig<T>, searchSta
 export function enrichXmlWithGains(
   originalXml: string, 
   data: ParsedPdfData, 
-  sources: { table8A: string[], table92A: string[], table92B: string[], tableG9: string[], tableG13: string[] } = { table8A: [], table92A: [], table92B: [], tableG9: [], tableG13: [] }
+  sources: { table8A: string[], table92A: string[], table92B: string[], tableG9: string[], tableG13: string[], tableG18A: string[], tableG1q7: string[] } = { table8A: [], table92A: [], table92B: [], tableG9: [], tableG13: [], tableG18A: [], tableG1q7: [] }
 ): EnrichmentResult {
   const { rows8A, rows92A, rows92B, rowsG9, rowsG13 } = data;
+  const rowsG18A = data.rowsG18A ?? [];
+  const rowsG1q7 = data.rowsG1q7 ?? [];
   validateXmlShape(originalXml, data);
   
   const emptySummary: EnrichmentSummary = {
@@ -184,10 +198,12 @@ export function enrichXmlWithGains(
     table92B: { rowsAdded: 0, totals: [], sources: [] },
     tableG9: { rowsAdded: 0, totals: [], sources: [] },
     tableG13: { rowsAdded: 0, totals: [], sources: [] },
+    tableG18A: { rowsAdded: 0, totals: [], sources: [] },
+    tableG1q7: { rowsAdded: 0, totals: [], sources: [] },
     totalRowsAdded: 0,
   };
 
-  if (rows8A.length === 0 && rows92A.length === 0 && rows92B.length === 0 && rowsG9.length === 0 && rowsG13.length === 0) {
+  if (rows8A.length === 0 && rows92A.length === 0 && rows92B.length === 0 && rowsG9.length === 0 && rowsG13.length === 0 && rowsG18A.length === 0 && rowsG1q7.length === 0) {
     return {
       originalXml,
       enrichedXml: originalXml,
@@ -296,8 +312,9 @@ export function enrichXmlWithGains(
   // ---------------------------------------------------------------------------
   // Anexo G enrichment (Quadro 09 – Shares sold through PT entities)
   // ---------------------------------------------------------------------------
-  const anexoGOpenIdx = xml.indexOf('<AnexoG');
-  if (anexoGOpenIdx !== -1 && (rowsG9.length > 0 || rowsG13.length > 0)) {
+  const anexoGMatch = /<AnexoG[\s>]/.exec(xml);
+  const anexoGOpenIdx = anexoGMatch ? anexoGMatch.index : -1;
+  if (anexoGOpenIdx !== -1 && (rowsG9.length > 0 || rowsG13.length > 0 || rowsG18A.length > 0)) {
     const anexoGCloseIdx = xml.indexOf('</AnexoG>', anexoGOpenIdx);
     expandSelfClosing('Quadro09', anexoGOpenIdx, anexoGCloseIdx);
     expandSelfClosing('Quadro13', anexoGOpenIdx, anexoGCloseIdx);
@@ -350,6 +367,70 @@ export function enrichXmlWithGains(
       ]
     }, anexoGOpenIdx);
     }
+
+    if (rowsG18A.length > 0) {
+      expandSelfClosing('Quadro18', anexoGOpenIdx, anexoGCloseIdx);
+      xml = processBlock<TaxRowG18A>(xml, {
+        containerName: 'AnexoGq18AT01',
+        quadroName: 'Quadro18',
+        rows: rowsG18A,
+        buildFields: (row, nLinha) => [
+          ['NLinha', String(nLinha)],
+          ['Titular', row.titular],
+          ['CodPaisEntGestora', row.codPaisEntGestora],
+          ['AnoRealizacao', row.anoRealizacao],
+          ['MesRealizacao', row.mesRealizacao],
+          ['DiaRealizacao', row.diaRealizacao],
+          ['ValorRealizacao', row.valorRealizacao],
+          ['AnoAquisicao', row.anoAquisicao],
+          ['MesAquisicao', row.mesAquisicao],
+          ['DiaAquisicao', row.diaAquisicao],
+          ['ValorAquisicao', row.valorAquisicao],
+          ['DespesasEncargos', row.despesasEncargos],
+          ['CodPaisContraparte', row.codPaisContraparte],
+        ],
+        somaNodes: [
+          { tag: 'AnexoGq18AT01SomaC01', fieldToSum: 'ValorRealizacao', computeNewSoma: rows => sumBy(rows, r => r.valorRealizacao) },
+          { tag: 'AnexoGq18AT01SomaC02', fieldToSum: 'ValorAquisicao', computeNewSoma: rows => sumBy(rows, r => r.valorAquisicao) },
+          { tag: 'AnexoGq18AT01SomaC03', fieldToSum: 'DespesasEncargos', computeNewSoma: rows => sumBy(rows, r => r.despesasEncargos) },
+        ],
+      }, anexoGOpenIdx);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Anexo G1 enrichment (Quadro 07 – crypto assets held >= 365 days, exempt)
+  // ---------------------------------------------------------------------------
+  const anexoG1Match = /<AnexoG1[\s>]/.exec(xml);
+  const anexoG1OpenIdx = anexoG1Match ? anexoG1Match.index : -1;
+  if (anexoG1OpenIdx !== -1 && rowsG1q7.length > 0) {
+    const anexoG1CloseIdx = xml.indexOf('</AnexoG1>', anexoG1OpenIdx);
+    expandSelfClosing('Quadro07', anexoG1OpenIdx, anexoG1CloseIdx);
+    xml = processBlock<TaxRowG1q7>(xml, {
+      containerName: 'AnexoG1q07T01',
+      quadroName: 'Quadro07',
+      rows: rowsG1q7,
+      buildFields: (row, nLinha) => [
+        ['NLinha', String(nLinha)],
+        ['Titular', row.titular],
+        ['CodPaisEntGestora', row.codPaisEntGestora],
+        ['AnoRealizacao', row.anoRealizacao],
+        ['MesRealizacao', row.mesRealizacao],
+        ['DiaRealizacao', row.diaRealizacao],
+        ['ValorRealizacao', row.valorRealizacao],
+        ['AnoAquisicao', row.anoAquisicao],
+        ['MesAquisicao', row.mesAquisicao],
+        ['DiaAquisicao', row.diaAquisicao],
+        ['ValorAquisicao', row.valorAquisicao],
+        ['DespesasEncargos', row.despesasEncargos],
+        ['CodPaisContraparte', row.codPaisContraparte],
+      ],
+      somaNodes: [
+        { tag: 'AnexoG1q07T01SomaC01', fieldToSum: 'ValorRealizacao', computeNewSoma: rows => sumBy(rows, r => r.valorRealizacao) },
+        { tag: 'AnexoG1q07T01SomaC02', fieldToSum: 'ValorAquisicao', computeNewSoma: rows => sumBy(rows, r => r.valorAquisicao) },
+        { tag: 'AnexoG1q07T01SomaC03', fieldToSum: 'DespesasEncargos', computeNewSoma: rows => sumBy(rows, r => r.despesasEncargos) },
+      ],
+    }, anexoG1OpenIdx);
   }
 
   // Build summary
@@ -398,8 +479,26 @@ export function enrichXmlWithGains(
         { label: 'report.totals.net_income', value: fmt(sumBy(rowsG13, r => r.rendimentoLiquido)), currency: true },
       ],
     },
-    totalRowsAdded: rows8A.length + rows92A.length + rows92B.length + rowsG9.length + rowsG13.length,
+    tableG18A: {
+      rowsAdded: rowsG18A.length,
+      sources: sources.tableG18A,
+      totals: rowsG18A.length === 0 ? [] : [
+        { label: 'report.totals.realisation_value', value: fmt(sumBy(rowsG18A, r => r.valorRealizacao)), currency: true },
+        { label: 'report.totals.acquisition_value', value: fmt(sumBy(rowsG18A, r => r.valorAquisicao)), currency: true },
+        { label: 'report.totals.expenses_charges', value: fmt(sumBy(rowsG18A, r => r.despesasEncargos)), currency: true },
+      ],
+    },
+    tableG1q7: {
+      rowsAdded: rowsG1q7.length,
+      sources: sources.tableG1q7,
+      totals: rowsG1q7.length === 0 ? [] : [
+        { label: 'report.totals.realisation_value', value: fmt(sumBy(rowsG1q7, r => r.valorRealizacao)), currency: true },
+        { label: 'report.totals.acquisition_value', value: fmt(sumBy(rowsG1q7, r => r.valorAquisicao)), currency: true },
+        { label: 'report.totals.expenses_charges', value: fmt(sumBy(rowsG1q7, r => r.despesasEncargos)), currency: true },
+      ],
+    },
+    totalRowsAdded: rows8A.length + rows92A.length + rows92B.length + rowsG9.length + rowsG13.length + rowsG18A.length + rowsG1q7.length,
   };
 
-  return { originalXml, enrichedXml: xml, summary };
+  return { originalXml, enrichedXml: xml, summary, warnings: data.warnings };
 }

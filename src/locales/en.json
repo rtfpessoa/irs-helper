@@ -54,9 +54,14 @@
       "ibkr_wrongFile": "\"{{fileName}}\" does not appear to be an IBKR Activity Statement. Please upload the correct file.",
       "ibkr_noData": "No trades, dividends, or interest data found in \"{{fileName}}\". Please verify this is an IBKR Activity Statement.",
       "file_too_large": "\"{{fileName}}\" is too large to process safely. Please provide a smaller PDF.",
-      "too_many_pages": "\"{{fileName}}\" has too many pages to process safely."
+      "too_many_pages": "\"{{fileName}}\" has too many pages to process safely.",
+      "binance_wrong_file": "\"{{fileName}}\" does not appear to be a supported Binance Transaction History export. Expected a header row with columns such as UTC Time, Operation, Coin, and Change.",
+      "binance_no_rows": "No crypto capital gains found in \"{{fileName}}\". Verify this Binance export contains Buy/Sell transactions.",
+      "binance_no_sells": "\"{{fileName}}\" contains crypto purchases but no sales for EUR. Only sales of crypto for EUR generate IRS rows.",
+      "revolut_wrong_file": "\"{{fileName}}\" does not appear to be a Revolut Consolidated Statement. Please upload the correct file."
     }
   },
+  "parser.warning.revolut_crypto_usd_only": "Revolut crypto transactions are reported in USD only. Declare crypto gains manually using ECB exchange rates for each transaction date.",
   "uploader": {
     "xml_lane": "Base IRS Declaration",
     "xml_file": "Select your .xml file",
@@ -67,6 +72,9 @@
     "mode_tables": "Show IRS Tables",
     "brokers_lane": "Broker Reports",
     "brokers_description": "Upload broker reports or CSV exports to extract financial data.",
+    "broker_selector_title": "Select the brokers you want to use",
+    "broker_selector_hint": "Upload fields appear only after you choose at least one broker.",
+    "broker_selector_empty": "Choose one or more brokers to show their upload fields.",
     "xtb_lane": "XTB",
     "xtb_gains": "Capital Gains PDF",
     "xtb_dividends": "Dividends and Interest PDF",
@@ -80,11 +88,12 @@
     "click_to_change": "Click to change",
     "drag_drop": "Drag & drop or click to browse",
     "remove_file": "Remove file",
+    "warnings_title": "Parser Limitations",
     "xtb_warning_title": "Parsing Limitations",
     "xtb_warning_1": "Optional 'RENDIMENTOS OBTIDOS EM TERRITÓRIO PORTUGUÊS' (Annex E 4 B) are ignored.",
     "xtb_warning_2": "Shares/Bonds from PT-resident entities (Annex G 9) are ignored.",
-    "xtb_warning_3": "Foreign Sourced CFDs (Annex J 9.2 B) are ignored.",
-    "xtb_warning_4": "PT Sourced Fractional Shares (Annex G 8) are ignored.",
+    "xtb_warning_3": "Foreign sourced CFDs (Annex J 9.2 B) are ignored.",
+    "xtb_warning_4": "PT sourced fractional shares (Annex G 8) are ignored.",
     "tr_warning_title": "Parsing Limitations",
     "tr_warning_1": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Annex J 9.2 A) are ignored.",
     "tr_warning_2": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Annex J 9.2 B) are ignored.",
@@ -106,7 +115,20 @@
     "freedom24_warning_2": "Sell trades whose opening buy belongs to a prior tax period are skipped — declare them manually.",
     "freedom24_warning_3": "ADRs with a US ISIN prefix (e.g. ASML) are mapped to country 840 (US) — verify the country field manually.",
     "ibkr_lane": "Interactive Brokers",
-    "ibkr_activityStatement": "IBKR Activity Statement (PDF)"
+    "ibkr_activityStatement": "IBKR Activity Statement (PDF)",
+    "binance_lane": "Binance",
+    "binance_report": "Transaction History XLSX",
+    "binance_warning_title": "Parsing Limitations",
+    "binance_warning_1": "Only crypto-to-EUR buy/sell trades generate IRS rows. Crypto-to-crypto swaps are treated as lot substitutions.",
+    "binance_warning_2": "Staking rewards, distributions, and earn interest create acquisition lots — they are only declared when later sold.",
+    "binance_warning_3": "The managing entity country defaults to France (250). Verify this matches your Binance contracting entity.",
+    "binance_warning_4": "Fees are only included when directly associated with a Buy or Sell trade.",
+    "revolut_lane": "Revolut",
+    "revolut_report": "Consolidated Statement PDF",
+    "revolut_warning_title": "Parsing Limitations",
+    "revolut_warning_1": "Crypto transactions are reported in USD only — declare crypto gains manually using ECB exchange rates.",
+    "revolut_warning_2": "ADR stocks (e.g. ASML) use the trading country (US) — verify the country code matches the issuer's country.",
+    "revolut_warning_3": "Money market fund service fees are not deductible — only gross interest is reported."
   },
   "warnings": {
     "ibkr_title": "IBKR Limitations",
@@ -141,6 +163,15 @@
       "title": "Quadro 9.2B",
       "subtitle": "Other Investment Income"
     },
+    "quadro_g18a": {
+      "title": "Quadro 18A",
+      "subtitle": "Crypto Assets — Held < 365 days"
+    },
+    "quadro_g1q7": {
+      "title": "Quadro 7 (G1)",
+      "subtitle": "Crypto Assets — Held ≥ 365 days (Exempt)"
+    },
+    "annex_g1": "Annex G1",
     "totals": {
       "gross_income": "Gross Income",
       "tax_paid_abroad": "Tax Paid Abroad",
@@ -153,7 +184,8 @@
   "tables": {
     "title": "IRS Tables",
     "subtitle": "{{count}} total rows across {{activeTables}} table(s).",
-    "control_sum": "Control Sum"
+    "control_sum": "Control Sum",
+    "source_column": "Broker"
   },
   "diff": {
     "title": "Before / After Comparison",

@@ -1,6 +1,7 @@
-import { TrendingUp, Receipt, Landmark, CheckCircle2, Activity } from 'lucide-react';
+import { TrendingUp, Receipt, Landmark, CheckCircle2, Activity, Coins } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { EnrichmentSummary } from '../types';
+import { getBrokerBadgeMeta } from '../utils/brokerBadgeMeta';
 
 interface EnrichmentReportProps {
   summary: EnrichmentSummary;
@@ -21,12 +22,7 @@ function TableCard({ title, subtitle, rowsAdded, totals, sources, icon, colorCla
   if (rowsAdded === 0) return null; // Don't show inactive tables at all
 
   const getSourceTagClass = (source: string) => {
-    const s = source.toLowerCase();
-    if (s.includes('xtb')) return 'enrichment-card__source-tag--xtb';
-    if (s.includes('trade republic')) return 'enrichment-card__source-tag--trade-republic';
-    if (s.includes('trading 212')) return 'enrichment-card__source-tag--t212';
-    if (s.includes('activobank')) return 'enrichment-card__source-tag--activobank';
-    return '';
+    return getBrokerBadgeMeta(source)?.sourceTagClass ?? '';
   };
 
   return (
@@ -42,7 +38,9 @@ function TableCard({ title, subtitle, rowsAdded, totals, sources, icon, colorCla
 
       <div className="enrichment-card__sources">
         {sources.map(s => (
-          <span key={s} className={`enrichment-card__source-tag ${getSourceTagClass(s)}`}>{s}</span>
+          <span key={s} className={`enrichment-card__source-tag ${getSourceTagClass(s)}`}>
+            {getBrokerBadgeMeta(s)?.shortLabel ?? s}
+          </span>
         ))}
       </div>
 
@@ -64,7 +62,7 @@ function TableCard({ title, subtitle, rowsAdded, totals, sources, icon, colorCla
 
 export function EnrichmentReport({ summary }: EnrichmentReportProps) {
   const { t } = useTranslation();
-  const activeTablesCount = [summary.table8A, summary.table92A, summary.table92B, summary.tableG9, summary.tableG13].filter(t => t.rowsAdded > 0).length;
+  const activeTablesCount = [summary.table8A, summary.table92A, summary.table92B, summary.tableG9, summary.tableG13, summary.tableG18A, summary.tableG1q7].filter(t => t.rowsAdded > 0).length;
 
   const annexGCards = [
     {
@@ -84,6 +82,15 @@ export function EnrichmentReport({ summary }: EnrichmentReportProps) {
       sources: summary.tableG13.sources,
       icon: <Activity size={20} />,
       colorClass: 'enrichment-card--blue',
+    },
+    {
+      title: t('report.quadro_g18a.title'),
+      subtitle: t('report.quadro_g18a.subtitle'),
+      rowsAdded: summary.tableG18A.rowsAdded,
+      totals: summary.tableG18A.totals,
+      sources: summary.tableG18A.sources,
+      icon: <Coins size={20} />,
+      colorClass: 'enrichment-card--orange',
     },
   ];
 
@@ -117,7 +124,8 @@ export function EnrichmentReport({ summary }: EnrichmentReportProps) {
     },
   ];
   
-  const hasAnnexG = summary.tableG9.rowsAdded > 0 || summary.tableG13.rowsAdded > 0;
+  const hasAnnexG = summary.tableG9.rowsAdded > 0 || summary.tableG13.rowsAdded > 0 || summary.tableG18A.rowsAdded > 0;
+  const hasAnnexG1 = summary.tableG1q7.rowsAdded > 0;
   const hasAnnexJ = [summary.table8A, summary.table92A, summary.table92B].some(t => t.rowsAdded > 0);
 
   return (
@@ -141,6 +149,25 @@ export function EnrichmentReport({ summary }: EnrichmentReportProps) {
             {annexGCards.map(card => (
               <TableCard key={card.title} {...card} />
             ))}
+          </div>
+        </div>
+      )}
+
+      {hasAnnexG1 && (
+        <div className="enrichment-report__annex-group">
+          <header className="enrichment-report__annex-title">
+            {t('report.annex_g1')} <span>{t('report.capital_gains')}</span>
+          </header>
+          <div className="enrichment-report__grid">
+            <TableCard
+              title={t('report.quadro_g1q7.title')}
+              subtitle={t('report.quadro_g1q7.subtitle')}
+              rowsAdded={summary.tableG1q7.rowsAdded}
+              totals={summary.tableG1q7.totals}
+              sources={summary.tableG1q7.sources}
+              icon={<Coins size={20} />}
+              colorClass="enrichment-card--teal"
+            />
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { Activity, Landmark, Receipt, TrendingUp } from 'lucide-react';
-import type { ParsedPdfData, TaxRow, TaxRow8A, TaxRow92B, TaxRowG9, TaxRowG13 } from '../types';
+import { Activity, Coins, Landmark, Receipt, TrendingUp } from 'lucide-react';
+import type { ParsedPdfData, TaxRow, TaxRow8A, TaxRow92B, TaxRowG9, TaxRowG13, TaxRowG18A, TaxRowG1q7 } from '../types';
+import { getBrokerBadgeMeta } from '../utils/brokerBadgeMeta';
 
 interface IrsTablesViewerProps {
   parsedData: ParsedPdfData;
@@ -10,10 +11,12 @@ interface IrsTablesViewerProps {
     table92B: string[];
     tableG9: string[];
     tableG13: string[];
+    tableG18A: string[];
+    tableG1q7: string[];
   };
 }
 
-interface TableConfig<T> {
+interface TableConfig<T extends { _source?: string }> {
   titleKey: string;
   subtitleKey: string;
   icon: React.ReactNode;
@@ -25,13 +28,7 @@ interface TableConfig<T> {
 }
 
 function getSourceTagClass(source: string) {
-  const s = source.toLowerCase();
-  if (s.includes('xtb')) return 'enrichment-card__source-tag--xtb';
-  if (s.includes('trade republic')) return 'enrichment-card__source-tag--trade-republic';
-  if (s.includes('trading 212')) return 'enrichment-card__source-tag--t212';
-  if (s.includes('activobank')) return 'enrichment-card__source-tag--activobank';
-  if (s.includes('degiro')) return 'enrichment-card__source-tag--degiro';
-  return '';
+  return getBrokerBadgeMeta(source)?.sourceTagClass ?? '';
 }
 
 function sumBy<T>(rows: T[], accessor: (row: T) => string): number {
@@ -42,7 +39,7 @@ function formatCurrency(value: number): string {
   return `${value.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 }
 
-function DataTable<T>({ config }: { config: TableConfig<T> }) {
+function DataTable<T extends { _source?: string }>({ config }: { config: TableConfig<T> }) {
   const { t } = useTranslation();
 
   if (config.rows.length === 0) return null;
@@ -62,7 +59,9 @@ function DataTable<T>({ config }: { config: TableConfig<T> }) {
 
       <div className="enrichment-card__sources">
         {config.sources.map(s => (
-          <span key={s} className={`enrichment-card__source-tag ${getSourceTagClass(s)}`}>{s}</span>
+          <span key={s} className={`enrichment-card__source-tag ${getSourceTagClass(s)}`}>
+            {getBrokerBadgeMeta(s)?.shortLabel ?? s}
+          </span>
         ))}
       </div>
 
@@ -70,6 +69,7 @@ function DataTable<T>({ config }: { config: TableConfig<T> }) {
         <table className="irs-table">
           <thead>
             <tr>
+              <th>{t('tables.source_column')}</th>
               {config.columns.map(col => (
                 <th key={col.header}>{col.header}</th>
               ))}
@@ -78,6 +78,13 @@ function DataTable<T>({ config }: { config: TableConfig<T> }) {
           <tbody>
             {config.rows.map((row, i) => (
               <tr key={i}>
+                <td className="irs-table__source-cell">
+                  {row._source && (
+                    <span className={`broker-badge ${getBrokerBadgeMeta(row._source)?.badgeClass ?? ''}`}>
+                      {getBrokerBadgeMeta(row._source)?.shortLabel ?? row._source}
+                    </span>
+                  )}
+                </td>
                 {config.columns.map(col => (
                   <td key={col.header}>{col.accessor(row, i)}</td>
                 ))}
@@ -225,11 +232,70 @@ export function IrsTablesViewer({ parsedData, sources }: IrsTablesViewerProps) {
     ],
   };
 
-  const hasAnnexG = parsedData.rowsG9.length > 0 || parsedData.rowsG13.length > 0;
+  const tableG18A: TableConfig<TaxRowG18A> = {
+    titleKey: 'report.quadro_g18a.title',
+    subtitleKey: 'report.quadro_g18a.subtitle',
+    icon: <Coins size={20} />,
+    colorClass: 'enrichment-card--orange',
+    rows: parsedData.rowsG18A,
+    sources: sources.tableG18A,
+    columns: [
+      { header: 'Nº Linha', accessor: (_, i) => String(18001 + i) },
+      { header: 'Titular', accessor: row => row.titular },
+      { header: 'País Entidade Gestora', accessor: row => row.codPaisEntGestora },
+      { header: 'Realização Ano', accessor: row => row.anoRealizacao },
+      { header: 'Realização Mês', accessor: row => row.mesRealizacao },
+      { header: 'Realização Dia', accessor: row => row.diaRealizacao },
+      { header: 'Realização Valor', accessor: row => row.valorRealizacao },
+      { header: 'Aquisição Ano', accessor: row => row.anoAquisicao },
+      { header: 'Aquisição Mês', accessor: row => row.mesAquisicao },
+      { header: 'Aquisição Dia', accessor: row => row.diaAquisicao },
+      { header: 'Aquisição Valor', accessor: row => row.valorAquisicao },
+      { header: 'Despesas e Encargos', accessor: row => row.despesasEncargos },
+      { header: 'País da Contraparte', accessor: row => row.codPaisContraparte },
+    ],
+    totals: [
+      { label: 'report.totals.realisation_value', value: formatCurrency(sumBy(parsedData.rowsG18A, r => r.valorRealizacao)) },
+      { label: 'report.totals.acquisition_value', value: formatCurrency(sumBy(parsedData.rowsG18A, r => r.valorAquisicao)) },
+      { label: 'report.totals.expenses_charges', value: formatCurrency(sumBy(parsedData.rowsG18A, r => r.despesasEncargos)) },
+    ],
+  };
+
+  const tableG1q7: TableConfig<TaxRowG1q7> = {
+    titleKey: 'report.quadro_g1q7.title',
+    subtitleKey: 'report.quadro_g1q7.subtitle',
+    icon: <Coins size={20} />,
+    colorClass: 'enrichment-card--teal',
+    rows: parsedData.rowsG1q7,
+    sources: sources.tableG1q7,
+    columns: [
+      { header: 'Nº Linha', accessor: (_, i) => String(701 + i) },
+      { header: 'Titular', accessor: row => row.titular },
+      { header: 'País Entidade Gestora', accessor: row => row.codPaisEntGestora },
+      { header: 'Realização Ano', accessor: row => row.anoRealizacao },
+      { header: 'Realização Mês', accessor: row => row.mesRealizacao },
+      { header: 'Realização Dia', accessor: row => row.diaRealizacao },
+      { header: 'Realização Valor', accessor: row => row.valorRealizacao },
+      { header: 'Aquisição Ano', accessor: row => row.anoAquisicao },
+      { header: 'Aquisição Mês', accessor: row => row.mesAquisicao },
+      { header: 'Aquisição Dia', accessor: row => row.diaAquisicao },
+      { header: 'Aquisição Valor', accessor: row => row.valorAquisicao },
+      { header: 'Despesas e Encargos', accessor: row => row.despesasEncargos },
+      { header: 'País da Contraparte', accessor: row => row.codPaisContraparte },
+    ],
+    totals: [
+      { label: 'report.totals.realisation_value', value: formatCurrency(sumBy(parsedData.rowsG1q7, r => r.valorRealizacao)) },
+      { label: 'report.totals.acquisition_value', value: formatCurrency(sumBy(parsedData.rowsG1q7, r => r.valorAquisicao)) },
+      { label: 'report.totals.expenses_charges', value: formatCurrency(sumBy(parsedData.rowsG1q7, r => r.despesasEncargos)) },
+    ],
+  };
+
+  const hasAnnexG = parsedData.rowsG9.length > 0 || parsedData.rowsG13.length > 0 || parsedData.rowsG18A.length > 0;
+  const hasAnnexG1 = parsedData.rowsG1q7.length > 0;
   const hasAnnexJ = parsedData.rows8A.length > 0 || parsedData.rows92A.length > 0 || parsedData.rows92B.length > 0;
 
-  const totalRows = parsedData.rows8A.length + parsedData.rows92A.length + parsedData.rows92B.length + parsedData.rowsG9.length + parsedData.rowsG13.length;
-  const activeTables = [parsedData.rows8A, parsedData.rows92A, parsedData.rows92B, parsedData.rowsG9, parsedData.rowsG13].filter(r => r.length > 0).length;
+  const totalRows = parsedData.rows8A.length + parsedData.rows92A.length + parsedData.rows92B.length + parsedData.rowsG9.length + parsedData.rowsG13.length + parsedData.rowsG18A.length + parsedData.rowsG1q7.length;
+  const activeTables = [parsedData.rows8A, parsedData.rows92A, parsedData.rows92B, parsedData.rowsG9, parsedData.rowsG13, parsedData.rowsG18A, parsedData.rowsG1q7].filter(r => r.length > 0).length;
 
   return (
     <div className="enrichment-report">
@@ -249,6 +315,16 @@ export function IrsTablesViewer({ parsedData, sources }: IrsTablesViewerProps) {
           </header>
           <DataTable config={tableG9} />
           <DataTable config={tableG13} />
+          <DataTable config={tableG18A} />
+        </div>
+      )}
+
+      {hasAnnexG1 && (
+        <div className="enrichment-report__annex-group">
+          <header className="enrichment-report__annex-title">
+            {t('report.annex_g1')} <span>{t('report.capital_gains')}</span>
+          </header>
+          <DataTable config={tableG1q7} />
         </div>
       )}
 

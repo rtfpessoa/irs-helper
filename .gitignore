@@ -31,6 +31,8 @@ coverage/
 # Local sensitive files used for manual testing
 *.pdf
 *.xml
+*.xlsx
+*.csv
 
 # Local AI/editor helper metadata
 .agents/

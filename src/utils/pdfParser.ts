@@ -5,7 +5,7 @@ import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 import type { TaxRow, TaxRow92B, TaxRow8A, TaxRowG9, TaxRowG13, ParsedPdfData } from '../types';
-import { resolveCountryCode } from './brokerCountries';
+import { resolveCountryCode, resolveCountryCodeFromIsin } from './brokerCountries';
 import { BrokerParsingError } from './parserErrors';
 
 const MAX_PDF_BYTES = 50 * 1024 * 1024;
@@ -259,6 +259,9 @@ export async function parseXtbCapitalGainsPdf(file: File): Promise<ParsedPdfData
     rows92B,
     rowsG9: [],
     rowsG13,
+    rowsG18A: [],
+    rowsG1q7: [],
+    warnings: [],
   };
 }
 
@@ -299,6 +302,9 @@ export async function parseXtbDividendsPdf(file: File): Promise<ParsedPdfData> {
     rows92B: [],
     rowsG9: [],
     rowsG13: [],
+    rowsG18A: [],
+    rowsG1q7: [],
+    warnings: [],
   };
 }
 
@@ -338,6 +344,9 @@ export async function parseTradeRepublicPdf(file: File): Promise<ParsedPdfData> 
     rows92B: [],
     rowsG9: [],
     rowsG13: [],
+    rowsG18A: [],
+    rowsG1q7: [],
+    warnings: [],
   };
 }
 
@@ -437,6 +446,9 @@ export async function parseTrading212Pdf(file: File): Promise<ParsedPdfData> {
     rows92B: [],
     rowsG9: [],
     rowsG13: [],
+    rowsG18A: [],
+    rowsG1q7: [],
+    warnings: [],
   };
 }
 
@@ -536,6 +548,9 @@ export async function parseActivoBankPdf(file: File): Promise<ParsedPdfData> {
     rows92B: [],
     rowsG9,
     rowsG13: [],
+    rowsG18A: [],
+    rowsG1q7: [],
+    warnings: [],
   };
 }
 
@@ -816,6 +831,9 @@ export async function parseFreedom24Pdf(file: File): Promise<ParsedPdfData> {
     rows92B: [],
     rowsG9: [],
     rowsG13: [],
+    rowsG18A: [],
+    rowsG1q7: [],
+    warnings: [],
   };
 }
 
@@ -1286,5 +1304,278 @@ export async function parseIbkrPdf(file: File): Promise<ParsedPdfData> {
     rows92B: [],
     rowsG9: [],
     rowsG13,
+    rowsG18A: [],
+    rowsG1q7: [],
+    warnings: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Revolut — Consolidated Statement (Extrato consolidado)
+// ---------------------------------------------------------------------------
+
+const REVOLUT_MARKERS = [
+  /Revolut\s+Securities\s+Europe\s+UAB/i,
+  /Extrato\s+consolidado/i,
+];
+
+const REVOLUT_FUND_KEYWORDS = ['ETF', 'UCITS', 'FUND', 'SICAV'];
+
+function classifyRevolutProduct(name: string): string {
+  const upper = name.toUpperCase();
+  if (REVOLUT_FUND_KEYWORDS.some(kw => upper.includes(kw))) return 'G20';
+  return 'G01';
+}
+
+/** €1,000.11 → 1000.11 | -€26.15 → -26.15 */
+function parseRevolutEurAmount(s: string): number {
+  const cleaned = s.replace(/[€\s]/g, '').replace(/,/g, '');
+  return parseFloat(cleaned) || 0;
+}
+
+/** DD/MM/YYYY → { year, month, day } for IRS fields */
+function parseRevolutDate(dateStr: string): { year: string; month: string; day: string } {
+  const parts = dateStr.split('/');
+  return {
+    year: parts[2],
+    month: String(parseInt(parts[1], 10)),
+    day: String(parseInt(parts[0], 10)),
+  };
+}
+
+/**
+ * Extract the text slice of a named section from `startPattern` to the first
+ * occurrence of any pattern in `endPatterns` that follows the start.
+ * Returns '' if `startPattern` doesn't match.
+ */
+function extractRevolutSection(
+  text: string,
+  startPattern: RegExp,
+  endPatterns: RegExp[],
+): string {
+  const startMatch = startPattern.exec(text);
+  if (!startMatch) return '';
+  const afterStart = text.slice(startMatch.index + startMatch[0].length);
+  let endIdx = afterStart.length;
+  for (const endPat of endPatterns) {
+    const endMatch = new RegExp(endPat.source, endPat.flags).exec(afterStart);
+    if (endMatch && endMatch.index < endIdx) {
+      endIdx = endMatch.index;
+    }
+  }
+  return afterStart.slice(0, endIdx);
+}
+
+/** All Revolut section start patterns — used as end delimiters for sibling sections. */
+const REVOLUT_ALL_SECTION_STARTS: RegExp[] = [
+  /Vendas\s+EUR/i,
+  /Outros\s+Rendimentos\s+EUR/i,
+  /Vendas\s+USD/i,
+  /Outros\s+Rendimentos\s+USD/i,
+  /Operações\s+de\s+cript[oa]/i,
+  /Operações\s+dos\s+Fundos\s+Monetários/i,
+];
+
+/**
+ * EUR sales row:
+ *   [product name...] ISIN 2-letter-country DD/MM/YYYY(buy) DD/MM/YYYY(sell)
+ *   €base €proceeds €commissions
+ */
+const REVOLUT_EUR_SALE_ROW =
+  /([A-Z]{2}[A-Z0-9]{10})\s+([A-Z]{2})\s+(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})\s+€\s*([\d,]+\.?\d*)\s+€\s*([\d,]+\.?\d*)\s+€\s*([\d,]+\.?\d*)/g;
+
+/**
+ * EUR dividend row:
+ *   [product name...] ISIN 2-letter-country €gross €wht
+ */
+const REVOLUT_EUR_DIV_ROW =
+  /([A-Z]{2}[A-Z0-9]{10})\s+([A-Z]{2})\s+€\s*([\d,]+\.?\d*)\s+€\s*([\d,]+\.?\d*)/g;
+
+/**
+ * USD sales row — EUR sub-lines already embedded:
+ *   [product name...] ISIN country DD/MM/YYYY DD/MM/YYYY
+ *   $base €base_eur Taxa:rate  $proceeds €proceeds_eur Taxa:rate  $comm €comm_eur Taxa:rate
+ */
+const REVOLUT_USD_SALE_ROW =
+  /([A-Z]{2}[A-Z0-9]{10})\s+([A-Z]{2})\s+(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})\s+\$[\d,]+\.?\d*\s+€\s*([\d,]+\.?\d*)\s+Taxa:\s+[\d.]+\s+\$[\d,]+\.?\d*\s+€\s*([\d,]+\.?\d*)\s+Taxa:\s+[\d.]+\s+\$[\d,]+\.?\d*\s+€\s*([\d,]+\.?\d*)\s+Taxa:\s+[\d.]+/g;
+
+/**
+ * USD dividend row — EUR sub-lines:
+ *   [product name...] ISIN country $gross €gross_eur Taxa:rate  $wht €wht_eur Taxa:rate
+ */
+const REVOLUT_USD_DIV_ROW =
+  /([A-Z]{2}[A-Z0-9]{10})\s+([A-Z]{2})\s+\$[\d,]+\.?\d*\s+€\s*([\d,]+\.?\d*)\s+Taxa:\s+[\d.]+\s+\$[\d,]+\.?\d*\s+€\s*([\d,]+\.?\d*)\s+Taxa:\s+[\d.]+/g;
+
+/**
+ * Parse stock/ETF sale rows from a Revolut section.
+ * Groups 1–7: ISIN, country, buyDate, sellDate, base(€), proceeds(€), commissions(€).
+ * Product name is inferred from text between the previous row end and the current ISIN.
+ */
+function parseRevolutSaleRows(sectionText: string, regex: RegExp): TaxRow[] {
+  const rows: TaxRow[] = [];
+  const re = new RegExp(regex.source, regex.flags);
+  let lastEnd = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = re.exec(sectionText)) !== null) {
+    const textBefore = sectionText.slice(lastEnd, match.index);
+    const productNameMatch = textBefore.match(/([A-Za-zÀ-ÿ0-9&\-.' ]+)$/);
+    const productName = productNameMatch ? productNameMatch[1].trim() : '';
+
+    const isin = match[1];
+    const country2 = match[2];
+    const buyDate = parseRevolutDate(match[3]);
+    const sellDate = parseRevolutDate(match[4]);
+    const base = parseRevolutEurAmount(match[5]);
+    const proceeds = parseRevolutEurAmount(match[6]);
+    const commissions = parseRevolutEurAmount(match[7]);
+
+    const countryCode3 = resolveCountryCodeFromIsin(country2) ?? '840';
+    const typeCode = classifyRevolutProduct(productName + ' ' + isin);
+
+    rows.push({
+      codPais: countryCode3,
+      codigo: typeCode,
+      anoRealizacao: sellDate.year,
+      mesRealizacao: sellDate.month,
+      diaRealizacao: sellDate.day,
+      valorRealizacao: proceeds.toFixed(2),
+      anoAquisicao: buyDate.year,
+      mesAquisicao: buyDate.month,
+      diaAquisicao: buyDate.day,
+      valorAquisicao: base.toFixed(2),
+      despesasEncargos: commissions.toFixed(2),
+      impostoPagoNoEstrangeiro: '0.00',
+      codPaisContraparte: countryCode3,
+    });
+
+    lastEnd = match.index + match[0].length;
+  }
+
+  return rows;
+}
+
+/**
+ * Parse dividend rows from a Revolut section.
+ * Groups 1–4: ISIN, country, gross(€), wht(€).
+ */
+function parseRevolutDivRows(sectionText: string, regex: RegExp): TaxRow8A[] {
+  const rows: TaxRow8A[] = [];
+  const re = new RegExp(regex.source, regex.flags);
+  let match: RegExpExecArray | null;
+
+  while ((match = re.exec(sectionText)) !== null) {
+    const country2 = match[2];
+    const gross = parseRevolutEurAmount(match[3]);
+    const wht = parseRevolutEurAmount(match[4]);
+    const countryCode3 = resolveCountryCodeFromIsin(country2) ?? '840';
+
+    rows.push({
+      codigo: 'E11',
+      codPais: countryCode3,
+      rendimentoBruto: gross.toFixed(2),
+      impostoPago: wht.toFixed(2),
+    });
+  }
+
+  return rows;
+}
+
+/**
+ * Parse a Revolut "Extrato consolidado" (Consolidated Statement) PDF.
+ *
+ * Extracts:
+ *   - MMF interest (page 1 summary) → Quadro 8A (E31, Ireland 372)
+ *   - EUR dividends → Quadro 8A (E11, country from País column)
+ *   - USD dividends → Quadro 8A (E11, using EUR sub-line amounts)
+ *   - EUR stock/ETF sales → Quadro 9.2A (G01/G20, country from País column)
+ *   - USD stock/ETF sales → Quadro 9.2A (G01/G20, using EUR sub-line amounts)
+ *   - Crypto transactions → skipped; a warning is added
+ *
+ * Known limitations:
+ *   - Crypto transactions are reported in USD only; declare crypto gains manually
+ *     using ECB exchange rates for each transaction date.
+ *   - ADR stocks (e.g. ASML) use the trading country (US) — verify the country
+ *     code matches the issuer's country.
+ *   - Money market fund service fees are not deductible; only gross interest is reported.
+ *
+ * Throws a BrokerParsingError if the file doesn't look like a Revolut Consolidated Statement.
+ */
+export async function parseRevolutConsolidatedPdf(file: File): Promise<ParsedPdfData> {
+  const pageTexts = await extractPdfText(file);
+  const fullText = pageTexts.join(' ');
+
+  if (!matchesAnyMarker(fullText, REVOLUT_MARKERS)) {
+    throw new BrokerParsingError(
+      `"${file.name}" does not appear to be a Revolut Consolidated Statement. Please upload the correct file.`,
+      'parser.error.revolut_wrong_file',
+      { fileName: file.name },
+    );
+  }
+
+  const rows8A: TaxRow8A[] = [];
+  const rows92A: TaxRow[] = [];
+  const warnings: string[] = [];
+
+  // --- MMF Interest (page 1 summary) ---
+  const mmfMatch = fullText.match(/Juros\s+totais\s+auferidos\s+€\s*([\d,]+\.?\d*)/i);
+  if (mmfMatch) {
+    const gross = parseRevolutEurAmount(mmfMatch[1]);
+    if (gross > 0) {
+      rows8A.push({
+        codigo: 'E31',
+        codPais: '372',
+        rendimentoBruto: gross.toFixed(2),
+        impostoPago: '0.00',
+      });
+    }
+  }
+
+  // --- EUR Sales ---
+  const eurSalesSection = extractRevolutSection(
+    fullText,
+    /Vendas\s+EUR/i,
+    REVOLUT_ALL_SECTION_STARTS,
+  );
+  rows92A.push(...parseRevolutSaleRows(eurSalesSection, REVOLUT_EUR_SALE_ROW));
+
+  // --- EUR Dividends ---
+  const eurDivSection = extractRevolutSection(
+    fullText,
+    /Outros\s+Rendimentos\s+EUR/i,
+    REVOLUT_ALL_SECTION_STARTS,
+  );
+  rows8A.push(...parseRevolutDivRows(eurDivSection, REVOLUT_EUR_DIV_ROW));
+
+  // --- USD Sales ---
+  const usdSalesSection = extractRevolutSection(
+    fullText,
+    /Vendas\s+USD/i,
+    REVOLUT_ALL_SECTION_STARTS,
+  );
+  rows92A.push(...parseRevolutSaleRows(usdSalesSection, REVOLUT_USD_SALE_ROW));
+
+  // --- USD Dividends ---
+  const usdDivSection = extractRevolutSection(
+    fullText,
+    /Outros\s+Rendimentos\s+USD/i,
+    REVOLUT_ALL_SECTION_STARTS,
+  );
+  rows8A.push(...parseRevolutDivRows(usdDivSection, REVOLUT_USD_DIV_ROW));
+
+  // --- Crypto: USD-only amounts — skip and warn ---
+  if (/Operações\s+de\s+cript[oa]/i.test(fullText)) {
+    warnings.push('parser.warning.revolut_crypto_usd_only');
+  }
+
+  return {
+    rows8A,
+    rows92A,
+    rows92B: [],
+    rowsG9: [],
+    rowsG13: [],
+    rowsG18A: [],
+    rowsG1q7: [],
+    warnings,
   };
 }

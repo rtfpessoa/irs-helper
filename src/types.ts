@@ -1,9 +1,11 @@
 /** Broker labels used in enrichment summaries. */
-export type BrokerName = 'XTB' | 'Trade Republic' | 'Trading 212' | 'ActivoBank' | 'Freedom24' | 'IBKR' | 'DEGIRO';
+export type BrokerName = 'XTB' | 'Trade Republic' | 'Trading 212' | 'ActivoBank' | 'Freedom24' | 'IBKR' | 'DEGIRO' | 'Binance' | 'Revolut';
 
 /** Common fields shared by IRS table rows that include country information. */
 export interface BaseTaxRow {
   codPais: string;
+  /** Broker that originated this row, stamped at merge time. */
+  _source?: BrokerName;
 }
 
 /** Anexo J - Quadro 9.2 A row (capital gains sells/acquisitions). */
@@ -39,6 +41,7 @@ export interface TaxRow8A extends BaseTaxRow {
 
 /** Anexo G - Quadro 9 row (shares sold through a Portuguese entity). */
 export interface TaxRowG9 {
+  _source?: BrokerName;
   titular: string;
   nif: string;
   codEncargos: string;
@@ -56,10 +59,45 @@ export interface TaxRowG9 {
 
 /** Anexo G - Quadro 13 row (CFDs/derivatives). */
 export interface TaxRowG13 {
+  _source?: BrokerName;
   codigoOperacao: string;
   titular: string;
   rendimentoLiquido: string;
   paisContraparte: string;
+}
+
+/** Anexo G - Quadro 18A row (crypto assets held < 365 days, taxable). */
+export interface TaxRowG18A {
+  _source?: BrokerName;
+  titular: string;
+  codPaisEntGestora: string;
+  anoRealizacao: string;
+  mesRealizacao: string;
+  diaRealizacao: string;
+  valorRealizacao: string;
+  anoAquisicao: string;
+  mesAquisicao: string;
+  diaAquisicao: string;
+  valorAquisicao: string;
+  despesasEncargos: string;
+  codPaisContraparte: string;
+}
+
+/** Anexo G1 - Quadro 7 row (crypto assets held >= 365 days, exempt). */
+export interface TaxRowG1q7 {
+  _source?: BrokerName;
+  titular: string;
+  codPaisEntGestora: string;
+  anoRealizacao: string;
+  mesRealizacao: string;
+  diaRealizacao: string;
+  valorRealizacao: string;
+  anoAquisicao: string;
+  mesAquisicao: string;
+  diaAquisicao: string;
+  valorAquisicao: string;
+  despesasEncargos: string;
+  codPaisContraparte: string;
 }
 
 /** Parsed broker data normalized to IRS table rows. */
@@ -69,6 +107,10 @@ export interface ParsedPdfData {
   rows92B: TaxRow92B[];
   rowsG9: TaxRowG9[];
   rowsG13: TaxRowG13[];
+  rowsG18A: TaxRowG18A[];
+  rowsG1q7: TaxRowG1q7[];
+  /** Informational warnings from parsers (e.g. file accepted but no taxable events). */
+  warnings: string[];
 }
 
 export interface TableSummary {
@@ -86,6 +128,8 @@ export interface EnrichmentSummary {
   table92B: TableSummary;
   tableG9: TableSummary;
   tableG13: TableSummary;
+  tableG18A: TableSummary;
+  tableG1q7: TableSummary;
   /** Total rows across all tables */
   totalRowsAdded: number;
 }
@@ -94,4 +138,5 @@ export interface EnrichmentResult {
   enrichedXml: string;
   originalXml: string;
   summary: EnrichmentSummary;
+  warnings?: string[];
 }
