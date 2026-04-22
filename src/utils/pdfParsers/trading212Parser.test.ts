@@ -105,6 +105,93 @@ describe('parseTrading212Pdf', () => {
       i18nKey: 'parser.error.t212_no_rows',
     });
   });
+
+  it('should parse Portuguese-language T212 annual statement (Extrato Anual)', async () => {
+    mockPdfDocument([
+      {
+        str: [
+          'Extrato Anual - 2024  Trading 212 Markets  Juros sobre capital €127.11',
+          '  VALOR LÍQUIDO  Portugal €3 35% €1.05 €1.95  Reino Unido €9.09 - - €9.09',
+          '  França €3.28 25% €0.82 €2.46  Espanha €3.14 19% €0.60 €2.55',
+          '  Estados Unidos €24.01 15% €3.61 €20.42  Dividendos por instrumento INSTRUMENT',
+          '  Distribuição por país  VALOR LÍQUIDO',
+          '  Irlanda €2.20 - - €2.20  Distribuição por instrumento ETF',
+        ].join(' '),
+      },
+    ]);
+
+    const fakeFile = new File([''], 't212_pt_statement.pdf');
+    const data = await parseTrading212Pdf(fakeFile);
+
+    // Interest: 127.11 as E21, Cyprus 196
+    expect(data.rows8A[0]).toEqual({
+      codigo: 'E21',
+      codPais: '196',
+      rendimentoBruto: '127.11',
+      impostoPago: '0.00',
+    });
+
+    // Dividends: Portugal
+    expect(data.rows8A[1]).toEqual({
+      codigo: 'E11',
+      codPais: '620',
+      rendimentoBruto: '3',
+      impostoPago: '1.05',
+    });
+
+    // Reino Unido (UK)
+    expect(data.rows8A[2]).toEqual({
+      codigo: 'E11',
+      codPais: '826',
+      rendimentoBruto: '9.09',
+      impostoPago: '0.00',
+    });
+
+    // França (France)
+    expect(data.rows8A[3]).toEqual({
+      codigo: 'E11',
+      codPais: '250',
+      rendimentoBruto: '3.28',
+      impostoPago: '0.82',
+    });
+
+    // Espanha (Spain)
+    expect(data.rows8A[4]).toEqual({
+      codigo: 'E11',
+      codPais: '724',
+      rendimentoBruto: '3.14',
+      impostoPago: '0.60',
+    });
+
+    // Estados Unidos (USA)
+    expect(data.rows8A[5]).toEqual({
+      codigo: 'E11',
+      codPais: '840',
+      rendimentoBruto: '24.01',
+      impostoPago: '3.61',
+    });
+
+    // Irlanda (Ireland) — from ETF distribution section
+    expect(data.rows8A[6]).toEqual({
+      codigo: 'E11',
+      codPais: '372',
+      rendimentoBruto: '2.20',
+      impostoPago: '0.00',
+    });
+
+    expect(data.rows8A.length).toBe(7);
+  });
+
+  it('should detect Portuguese T212 statement via Extrato Anual marker', async () => {
+    mockPdfDocument([
+      { str: 'Extrato Anual - 2024  Trading 212 Markets  Juros sobre capital €50.00  VALOR LÍQUIDO  Portugal €10 - - €10  Dividendos por instrumento END' },
+    ]);
+
+    const fakeFile = new File([''], 't212_pt_detect.pdf');
+    const data = await parseTrading212Pdf(fakeFile);
+    expect(data.rows8A.some(r => r.codigo === 'E21')).toBe(true);
+    expect(data.rows8A.some(r => r.codigo === 'E11')).toBe(true);
+  });
 });
 
 describe('resolveCountryCode', () => {
@@ -116,6 +203,15 @@ describe('resolveCountryCode', () => {
     expect(resolveCountryCode('Spain')).toBe('724');
     expect(resolveCountryCode('Netherlands')).toBe('528');
     expect(resolveCountryCode('Cyprus')).toBe('196');
+  });
+
+  it('should resolve Portuguese country names to IRS codes', () => {
+    expect(resolveCountryCode('Reino Unido')).toBe('826');
+    expect(resolveCountryCode('França')).toBe('250');
+    expect(resolveCountryCode('Espanha')).toBe('724');
+    expect(resolveCountryCode('Estados Unidos')).toBe('840');
+    expect(resolveCountryCode('Irlanda')).toBe('372');
+    expect(resolveCountryCode('Portugal')).toBe('620');
   });
 
   it('should return undefined for unknown country names', () => {

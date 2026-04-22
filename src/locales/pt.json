@@ -97,6 +97,7 @@
     "tr_warning_2": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Anexo J 9.2 B) são ignorados.",
     "t212_warning_title": "Limitações de processamento",
     "t212_warning_1": "Mais-valias de vendas/posições fechadas (Anexo J 9.2A) ainda não são suportadas.",
+    "t212_warning_2": "Apenas os relatórios anuais em inglês e português são suportados.",
     "activobank_lane": "ActivoBank",
     "activobank_report": "PDF de Mais-valias (Alienação Onerosa)",
     "activobank_warning_title": "Limitações de processamento",

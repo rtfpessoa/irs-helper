@@ -173,7 +173,7 @@ export function HomePage() {
         badge: getBrokerBadgeMeta('trading 212')?.shortLabel ?? 'T212',
         badgeClass: getBrokerBadgeMeta('trading 212')?.badgeClass ?? 'broker-badge--t212',
         laneKey: 'uploader.t212_lane',
-        warningKeys: ['uploader.t212_warning_1'],
+        warningKeys: ['uploader.t212_warning_1', 'uploader.t212_warning_2'],
         uploaders: [
           {
             labelKey: 'uploader.t212_report',

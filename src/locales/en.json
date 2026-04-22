@@ -99,6 +99,7 @@
     "tr_warning_2": "RENDIMENTOS DE INCREMENTOS PATRIMONIAIS (Annex J 9.2 B) are ignored.",
     "t212_warning_title": "Parsing Limitations",
     "t212_warning_1": "Capital gains from sell trades/closed positions (Annex J 9.2A) are not yet supported.",
+    "t212_warning_2": "Only English and Portuguese annual statements are supported.",
     "activobank_lane": "ActivoBank",
     "activobank_report": "Capital Gains Statement PDF",
     "activobank_warning_title": "Parsing Limitations",
