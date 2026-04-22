@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { parseIbkrPdf } from './ibkrParser';
-import { BrokerParsingError } from '../parserErrors';
 import { mockPdfDocument } from './testHelper';
 
 vi.mock('pdfjs-dist', () => ({
