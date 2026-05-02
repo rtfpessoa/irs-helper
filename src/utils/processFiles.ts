@@ -6,6 +6,7 @@ import { parseFreedom24Pdf } from './pdfParsers/freedom24Parser';
 import { parseIbkrPdf } from './pdfParsers/ibkrParser';
 import { parseRevolutConsolidatedPdf } from './pdfParsers/revolutParser';
 import { parseDegiroTransactionsCsv } from './csvParsers/degiroParser';
+import { parseRevolutConsolidatedCsv } from './csvParsers/revolutParser';
 import { parseBinanceTransactionsXlsx } from './xlsxParsers/binanceParser';
 import { enrichXmlWithGains } from './xmlModifier';
 import type { BrokerName, EnrichmentResult, ParsedPdfData } from '../types';
@@ -24,6 +25,7 @@ export interface ProcessTaxFilesInput {
   degiroTransactionsCsv?: File | null;
   binanceTransactionsXlsx?: File | null;
   revolutConsolidatedPdf?: File | null;
+  revolutConsolidatedCsv?: File | null;
 }
 
 export interface ProcessBrokerFilesInput {
@@ -37,6 +39,7 @@ export interface ProcessBrokerFilesInput {
   degiroTransactionsCsv?: File | null;
   binanceTransactionsXlsx?: File | null;
   revolutConsolidatedPdf?: File | null;
+  revolutConsolidatedCsv?: File | null;
 }
 
 export interface BrokerFilesResult {
@@ -144,7 +147,7 @@ function inferTargetRealizationYearFromXml(xmlText: string): string | undefined 
  */
 export async function processTaxFiles(input: ProcessTaxFilesInput): Promise<EnrichmentResult> {
   const originalXmlText = await input.xmlFile.text();
-  const degiroTargetRealizationYear = inferTargetRealizationYearFromXml(originalXmlText);
+  const targetRealizationYear = inferTargetRealizationYearFromXml(originalXmlText);
   const parsedData = emptyParsedData();
 
   const sources: AggregatedSources = {
@@ -195,7 +198,7 @@ export async function processTaxFiles(input: ProcessTaxFilesInput): Promise<Enri
     },
     {
       file: input.degiroTransactionsCsv,
-      parser: file => parseDegiroTransactionsCsv(file, { targetRealizationYear: degiroTargetRealizationYear }),
+      parser: file => parseDegiroTransactionsCsv(file, { targetRealizationYear }),
       brokerName: 'DEGIRO',
     },
     {
@@ -206,6 +209,11 @@ export async function processTaxFiles(input: ProcessTaxFilesInput): Promise<Enri
     {
       file: input.revolutConsolidatedPdf,
       parser: parseRevolutConsolidatedPdf,
+      brokerName: 'Revolut',
+    },
+    {
+      file: input.revolutConsolidatedCsv,
+      parser: file => parseRevolutConsolidatedCsv(file, { targetRealizationYear }),
       brokerName: 'Revolut',
     },
   ];
@@ -301,6 +309,11 @@ export async function processBrokerFiles(input: ProcessBrokerFilesInput): Promis
     {
       file: input.revolutConsolidatedPdf,
       parser: parseRevolutConsolidatedPdf,
+      brokerName: 'Revolut',
+    },
+    {
+      file: input.revolutConsolidatedCsv,
+      parser: parseRevolutConsolidatedCsv,
       brokerName: 'Revolut',
     },
   ];

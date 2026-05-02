@@ -11,6 +11,23 @@ const sampleCsv = `Data,Hora,Produto,ISIN,Bolsa de referência,Bolsa,Quantidade,
 02-10-2020,09:47,VANGUARD S&P 500 UCITS ETF USD DIS,IE00B3XXRP09,EAM,XAMS,2,"54,0000",EUR,"-108,00",EUR,"-108,00",,"0,00",,"-108,00",,a5d2688d-38db-41cd-a9a0-681f778201d4
 `;
 
+const revolutCsv = `"Contas-correntes Resumos",,,,,,,,
+"Investment Services Resumos",,,,,,,,
+"Investment Services Extratos de operações",,,,,,,,
+"Extrato de operações (apenas dividendos recebidos)",,,,,,,,
+Data,"Descrição e símbolo",ISIN,País,"Dividendo/rendimento brutos","Impostos retidos","Outros impostos",Comissões,"Dividendo/lucro líquido",
+17/02/2025,"Apple dividend",US0378331005,US,"0,48$ (0,44€)","0,07$ (0,06€)","0,00$ (0,00€)","0,00€ (0,00€)","0,41$ (0,38€)"
+`;
+
+const multiYearRevolutCsv = `"Contas-correntes Resumos",,,,,,,,
+"Investment Services Resumos",,,,,,,,
+"Investment Services Extratos de operações",,,,,,,,
+"Extrato de operações (apenas dividendos recebidos)",,,,,,,,
+Data,"Descrição e símbolo",ISIN,País,"Dividendo/rendimento brutos","Impostos retidos","Outros impostos",Comissões,"Dividendo/lucro líquido",
+17/02/2024,"Apple dividend",US0378331005,US,"0,48$ (0,44€)","0,07$ (0,06€)","0,00$ (0,00€)","0,00€ (0,00€)","0,41$ (0,38€)"
+17/02/2025,"Apple dividend",US0378331005,US,"0,60$ (0,55€)","0,09$ (0,08€)","0,00$ (0,00€)","0,00€ (0,00€)","0,51$ (0,47€)"
+`;
+
 vi.mock('./pdfParsers/xtbParser', () => ({
   parseXtbCapitalGainsPdf: vi.fn(),
   parseXtbDividendsPdf: vi.fn(),
@@ -55,6 +72,16 @@ describe('processBrokerFiles', () => {
 
     expect(result.parsedData.rows92A).toHaveLength(2);
     expect(result.parsedData.rows92A.map(row => row.anoRealizacao)).toEqual(['2024', '2025']);
+  });
+
+  it('includes Revolut CSV rows in the broker aggregation flow', async () => {
+    const result = await processBrokerFiles({
+      revolutConsolidatedCsv: new File([revolutCsv], 'revolut.csv', { type: 'text/csv' }),
+    });
+
+    expect(result.parsedData.rows8A).toHaveLength(1);
+    expect(result.parsedData.rows8A[0]._source).toBe('Revolut');
+    expect(result.sources.table8A).toEqual(['Revolut']);
   });
 });
 
@@ -195,6 +222,30 @@ describe('processTaxFiles', () => {
       xmlFile: new File([xml], 'irs.xml', { type: 'application/xml' }),
       degiroTransactionsCsv: new File([degiroCsv], 'degiro.csv', { type: 'text/csv' }),
     })).rejects.toThrow('NO_ROWS_FOUND');
+  });
+
+  it('infers the target year for Revolut CSV enrichment', async () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Modelo3IRSv2026 xmlns="http://www.dgci.gov.pt/2009/Modelo3IRSv2026">
+  <AnexoJ>
+    <Quadro08>
+      <AnexoJq08AT01/>
+      <AnexoJq08AT01SomaC01>0.00</AnexoJq08AT01SomaC01>
+      <AnexoJq08AT01SomaC02>0.00</AnexoJq08AT01SomaC02>
+    </Quadro08>
+    <Quadro09/>
+  </AnexoJ>
+</Modelo3IRSv2026>`;
+
+    const result = await processTaxFiles({
+      xmlFile: new File([xml], 'irs.xml', { type: 'application/xml' }),
+      revolutConsolidatedCsv: new File([multiYearRevolutCsv], 'revolut.csv', { type: 'text/csv' }),
+    });
+
+    expect(result.summary.table8A.rowsAdded).toBe(1);
+    expect(result.summary.table8A.sources).toEqual(['Revolut']);
+    expect(result.enrichedXml).toContain('<RendimentoBruto>0.55</RendimentoBruto>');
+    expect(result.enrichedXml).not.toContain('<RendimentoBruto>0.44</RendimentoBruto>');
   });
 
   it('merges multiple broker sources and tracks them in summary', async () => {
