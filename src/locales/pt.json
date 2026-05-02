@@ -140,7 +140,7 @@
     "etrade_warning_title": "Limitações de Leitura",
     "etrade_warning_1": "Apenas são suportados workbooks `.xlsx` de mais-valias E*TRADE com linhas `Sell`.",
     "etrade_warning_2": "Os valores são convertidos de USD para EUR com taxas ECB USD/EUR do próprio dia quando disponíveis, caso contrário do dia ECB publicado seguinte, descarregadas em runtime e em cache no browser.",
-    "etrade_warning_3": "Todas as linhas E*TRADE importadas são tratadas como títulos dos EUA no Anexo J 9.2A."
+    "etrade_warning_3": "Todas as linhas E*TRADE importadas são tratadas como vendas de ações dos EUA no Anexo J 9.2A com o código G01."
   },
   "warnings": {
     "ibkr_title": "Limitações IBKR",

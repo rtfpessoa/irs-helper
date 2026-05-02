@@ -140,7 +140,7 @@
     "etrade_warning_title": "Parsing Limitations",
     "etrade_warning_1": "Only E*TRADE gain/loss workbook `.xlsx` exports with `Sell` rows are supported.",
     "etrade_warning_2": "Values are converted from USD to EUR using same-day ECB USD/EUR rates when available, otherwise the next published ECB day, fetched at runtime and cached in your browser.",
-    "etrade_warning_3": "All imported E*TRADE rows are treated as U.S. securities in Annex J 9.2A."
+    "etrade_warning_3": "All imported E*TRADE rows are treated as U.S. share sales in Annex J 9.2A with code G01."
   },
   "warnings": {
     "ibkr_title": "IBKR Limitations",

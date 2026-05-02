@@ -105,7 +105,7 @@ describe('parseEtradeGainLossWorkbook', () => {
 
     expect(data.rows92A).toEqual([{
       codPais: '840',
-      codigo: 'G20',
+      codigo: 'G01',
       anoRealizacao: '2025',
       mesRealizacao: '3',
       diaRealizacao: '5',

@@ -118,6 +118,7 @@ describe('processBrokerFiles', () => {
     const result = await processBrokerFiles({ etradeGainLossXlsx });
 
     expect(result.parsedData.rows92A).toHaveLength(1);
+    expect(result.parsedData.rows92A[0].codigo).toBe('G01');
     expect(result.sources.table92A).toEqual(['E*TRADE']);
   });
 
