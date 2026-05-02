@@ -66,7 +66,9 @@
       "revolut_wrong_file": "\"{{fileName}}\" não parece ser um Extrato Consolidado da Revolut. Por favor, carregue o ficheiro correto."
     }
   },
-  "parser.warning.revolut_crypto_usd_only": "As operações de cripto da Revolut são reportadas apenas em USD. Declare os ganhos de cripto manualmente usando as taxas de câmbio do BCE para cada data de transação.",
+  "parser.warning.revolut_crypto_usd_only": "As operações de cripto no PDF Revolut são reportadas apenas em USD. Use o extrato CSV ou declare os ganhos de cripto manualmente usando as taxas de câmbio do BCE.",
+  "parser.warning.revolut_csv_unsupported_rows": "Algumas linhas do CSV Revolut foram ignoradas porque não incluem valores em EUR utilizáveis.",
+  "parser.warning.revolut_csv_commodities_unsupported": "Linhas de commodities/metais preciosos da Revolut não são importadas. Declare-as manualmente se aplicável.",
   "uploader": {
     "xml_lane": "Declaração de IRS Base",
     "xml_file": "Selecione o seu ficheiro .xml",
@@ -133,10 +135,13 @@
     "binance_warning_4": "As taxas só são incluídas quando diretamente associadas a uma trade de compra ou venda.",
     "revolut_lane": "Revolut",
     "revolut_report": "Extrato Consolidado PDF",
+    "revolut_pdf_report": "Extrato Consolidado PDF",
+    "revolut_csv_report": "Extrato Consolidado CSV",
     "revolut_warning_title": "Limitações de processamento",
-    "revolut_warning_1": "As operações de cripto são reportadas apenas em USD — declare os ganhos de cripto manualmente usando taxas de câmbio do BCE.",
+    "revolut_warning_1": "As vendas de cripto são importadas a partir do CSV quando a Revolut fornece valores de venda e aquisição em EUR; secções de cripto em PDF não são importadas.",
     "revolut_warning_2": "Ações ADR (ex.: ASML) usam o país de negociação (EUA) — verifique se o código do país corresponde ao país do emissor.",
-    "revolut_warning_3": "As comissões dos fundos monetários não são dedutíveis — apenas os juros brutos são reportados.",
+    "revolut_warning_3": "As comissões dos Flexible Cash Funds não são dedutíveis — apenas os juros brutos são reportados como E21.",
+    "revolut_warning_4": "Os juros da Instant Access Savings são ignorados porque o imposto português é retido na fonte.",
     "etrade_warning_title": "Limitações de Leitura",
     "etrade_warning_1": "Apenas são suportados workbooks `.xlsx` de mais-valias E*TRADE com linhas `Sell`.",
     "etrade_warning_2": "Os valores são convertidos de USD para EUR com taxas ECB USD/EUR do próprio dia quando disponíveis, caso contrário do dia ECB publicado seguinte, descarregadas em runtime e em cache no browser.",

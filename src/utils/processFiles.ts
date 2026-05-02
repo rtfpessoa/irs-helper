@@ -6,6 +6,7 @@ import { parseFreedom24Pdf } from './pdfParsers/freedom24Parser';
 import { parseIbkrPdf } from './pdfParsers/ibkrParser';
 import { parseRevolutConsolidatedPdf } from './pdfParsers/revolutParser';
 import { parseDegiroTransactionsCsv } from './csvParsers/degiroParser';
+import { parseRevolutConsolidatedCsv } from './csvParsers/revolutParser';
 import { parseBinanceTransactionsXlsx } from './xlsxParsers/binanceParser';
 import { parseEtradeGainLossWorkbook } from './xlsxParsers/etradeXlsxParser';
 import { enrichXmlWithGains } from './xmlModifier';
@@ -25,6 +26,7 @@ export interface ProcessTaxFilesInput {
   degiroTransactionsCsv?: File | null;
   binanceTransactionsXlsx?: File | null;
   revolutConsolidatedPdf?: File | null;
+  revolutConsolidatedCsv?: File | null;
   etradeGainLossXlsx?: File | null;
 }
 
@@ -39,6 +41,7 @@ export interface ProcessBrokerFilesInput {
   degiroTransactionsCsv?: File | null;
   binanceTransactionsXlsx?: File | null;
   revolutConsolidatedPdf?: File | null;
+  revolutConsolidatedCsv?: File | null;
   etradeGainLossXlsx?: File | null;
 }
 
@@ -212,6 +215,11 @@ export async function processTaxFiles(input: ProcessTaxFilesInput): Promise<Enri
       brokerName: 'Revolut',
     },
     {
+      file: input.revolutConsolidatedCsv,
+      parser: file => parseRevolutConsolidatedCsv(file, { targetRealizationYear }),
+      brokerName: 'Revolut',
+    },
+    {
       file: input.etradeGainLossXlsx,
       parser: file => parseEtradeGainLossWorkbook(file, { targetRealizationYear }),
       brokerName: 'E*TRADE',
@@ -309,6 +317,11 @@ export async function processBrokerFiles(input: ProcessBrokerFilesInput): Promis
     {
       file: input.revolutConsolidatedPdf,
       parser: parseRevolutConsolidatedPdf,
+      brokerName: 'Revolut',
+    },
+    {
+      file: input.revolutConsolidatedCsv,
+      parser: parseRevolutConsolidatedCsv,
       brokerName: 'Revolut',
     },
     {
