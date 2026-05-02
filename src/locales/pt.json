@@ -39,7 +39,7 @@
       "xtb_no_gains_rows": "Não foram encontrados dados de mais-valias em \"{{fileName}}\". Verifique que este é um relatório de Mais-valias XTB.",
       "xtb_no_dividends_rows": "Não foram encontrados dados de dividendos em \"{{fileName}}\". Verifique que este é um relatório de Dividendos XTB.",
       "tr_wrong_file": "\"{{fileName}}\" não parece ser um Relatório de Impostos da Trade Republic. Por favor, carregue o ficheiro correto.",
-      "tr_no_rows": "Não foram encontrados dados de dividendos/juros em \"{{fileName}}\". Verifique que este é um Relatório de Impostos da Trade Republic.",
+      "tr_no_rows": "Não foram encontrados dados de dividendos/juros ou mais-valias em \"{{fileName}}\". Verifique que este é um Relatório de Impostos da Trade Republic.",
       "t212_wrong_file": "\"{{fileName}}\" não parece ser um Relatório Anual da Trading 212. Por favor, carregue o ficheiro correto.",
       "t212_no_rows": "Não foram encontrados dados de dividendos/juros em \"{{fileName}}\". Verifique que este é um Relatório Anual da Trading 212.",
       "activobank_wrong_file": "\"{{fileName}}\" não parece ser um extrato do ActivoBank. Por favor, carregue o ficheiro correto.",

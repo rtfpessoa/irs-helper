@@ -39,7 +39,7 @@
       "xtb_no_gains_rows": "No capital gains data found in \"{{fileName}}\". Please verify this is an XTB Capital Gains report.",
       "xtb_no_dividends_rows": "No dividend data found in \"{{fileName}}\". Please verify this is an XTB Dividends report.",
       "tr_wrong_file": "\"{{fileName}}\" does not appear to be a Trade Republic Tax Report. Please upload the correct file.",
-      "tr_no_rows": "No dividend/interest data found in \"{{fileName}}\". Please verify this is a Trade Republic Tax Report.",
+      "tr_no_rows": "No dividend/interest or capital gains data found in \"{{fileName}}\". Please verify this is a Trade Republic Tax Report.",
       "t212_wrong_file": "\"{{fileName}}\" does not appear to be a Trading 212 Annual Statement. Please upload the correct file.",
       "t212_no_rows": "No dividend/interest data found in \"{{fileName}}\". Please verify this is a Trading 212 Annual Statement.",
       "activobank_wrong_file": "\"{{fileName}}\" does not appear to be an ActivoBank statement. Please upload the correct file.",
